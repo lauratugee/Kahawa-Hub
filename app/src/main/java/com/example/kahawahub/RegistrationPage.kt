@@ -53,6 +53,8 @@ fun RegistrationPage(
     var userTypeExpanded by remember {
         mutableStateOf(false)
     }
+    val auth= FirebaseAuth.getInstance()
+    val db = FirebaseFirestore.getInstance()
     Column(
         modifier = Modifier
             .fillMaxSize()
