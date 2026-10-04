@@ -26,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+
 
 
 @Composable
@@ -55,6 +58,7 @@ fun RegistrationPage(
     }
     val auth= FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
+    val context=LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -201,6 +205,21 @@ fun RegistrationPage(
                                 db.collection("users")
                                     .document(userId)
                                     .set(userData)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(
+                                            context,
+                                            "Registration successful",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        Toast.makeText(
+                                            context,
+                                            "Registration failed: ${exception.message}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+
+                                    }
                             }
                         }
                 }

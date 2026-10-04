@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:688434557498:android:0d0065adf65de8b778fb03",
+        "mobilesdk_app_id": "1:688434557498:android:2ccd0b6fbb861dd778fb03",
         "android_client_info": {
-          "package_name": "come.example.kahawahub"
+          "package_name": "com.example.kahawahub"
         }
       },
       "oauth_client": [],
