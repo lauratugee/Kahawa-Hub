@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "688434557498",
+    "project_id": "kahawa-hub",
+    "storage_bucket": "kahawa-hub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:688434557498:android:0d0065adf65de8b778fb03",
+        "android_client_info": {
+          "package_name": "come.example.kahawahub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxVRSEwth854xPtT279-myz5JkjO9iHNY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
