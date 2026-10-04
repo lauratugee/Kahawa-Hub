@@ -8,7 +8,7 @@ espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.13.0"
 composeBom = "2024.09.00"
-firebaseBom="34.3.0"
+firebaseBom="34.19.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -33,5 +33,5 @@ firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-google-services = { id = "com.google.gms.google-services", version ="4.4.2"}
+google-services = { id = "com.google.gms.google-services", version ="4.5.0"}
 
