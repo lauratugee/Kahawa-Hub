@@ -1,4 +1,4 @@
-package com.example.coffeekonnect
+package com.example.kahawahub
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,15 +27,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.coffeekonnect.ui.theme.CoffeeKonnectTheme
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+
+import com.example.kahawahub.ui.theme.KahawaHubTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            CoffeeKonnectTheme {
-                CoffeeKonnectApp()
+            KahawaHubTheme {
+                KahawaHubApp()
 
                 }
             }
@@ -44,7 +51,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun CoffeeKonnectApp() {
+fun KahawaHubApp() {
 
     var currentScreen by remember {
         mutableStateOf("welcome")
@@ -52,7 +59,7 @@ fun CoffeeKonnectApp() {
     when (currentScreen) {
 
         "welcome" -> {
-            CoffeeKonnectWelcomePage(
+            KahawaHubWelcomePage(
                 onLoginClick = {
                     currentScreen = "login"
                 },
@@ -83,10 +90,32 @@ fun CoffeeKonnectApp() {
 }
 
 @Composable
-fun CoffeeKonnectWelcomePage(
+fun KahawaHubWelcomePage(
     onLoginClick: () -> Unit,
     onRegistrationClick: () -> Unit
 ){
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ){
+        Image(
+            painter=painterResource(
+                id=R.drawable.welcomepagepic
+            ),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background((
+                        Color.Black.copy(alpha=0.35f)
+                        )
+
+                )
+        )
+    }
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ){ innerPadding ->
@@ -104,7 +133,7 @@ fun CoffeeKonnectWelcomePage(
             verticalArrangement = Arrangement.Center
         ){
           Text(
-              text= "COFFEE KONNECT",
+              text= "KAHAWA HUB",
               fontSize = 32.sp,
               fontWeight = FontWeight.Bold,
               textAlign = TextAlign.Center
@@ -112,7 +141,7 @@ fun CoffeeKonnectWelcomePage(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text= "Linking smallholder coffee farmers across Kenya",
+                text= "Your Coffee. Your Market.",
                 fontSize = 17.sp,
                 textAlign = TextAlign.Center
             )

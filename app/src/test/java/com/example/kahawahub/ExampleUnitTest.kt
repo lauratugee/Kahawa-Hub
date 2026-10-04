@@ -1,4 +1,4 @@
-package com.example.coffeekonnect
+package com.example.kahawahub
 
 import org.junit.Test
 

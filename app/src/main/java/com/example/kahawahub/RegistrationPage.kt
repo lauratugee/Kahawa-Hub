@@ -1,4 +1,4 @@
-package com.example.coffeekonnect
+package com.example.kahawahub
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -61,7 +59,7 @@ fun RegistrationPage(
         verticalArrangement= Arrangement.Center
     ){
         Text(
-            text="COFFEE KONNECT",
+            text="KAHAWA HUB",
             fontSize=28.sp,
             fontWeight=FontWeight.Bold
         )
@@ -175,15 +173,7 @@ fun RegistrationPage(
                     userTypeExpanded = false
                 }
             )
-            DropdownMenuItem(
-                text = {
-                    Text("Administrator")
-                },
-                onClick = {
-                    userType = "Administrator"
-                    userTypeExpanded = false
-                }
-            )
+
         }
         Spacer(modifier = Modifier.height(15.dp))
 

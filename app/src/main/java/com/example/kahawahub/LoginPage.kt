@@ -1,4 +1,4 @@
-package com.example.coffeekonnect
+package com.example.kahawahub
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -48,7 +48,7 @@ fun LoginPage(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "COFFEE KONNECT",
+            text = "KAHAWA HUB",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )

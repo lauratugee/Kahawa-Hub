@@ -1,4 +1,4 @@
-package com.example.coffeekonnect.ui.theme
+package com.example.kahawahub.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
