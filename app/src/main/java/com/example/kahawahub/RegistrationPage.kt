@@ -183,7 +183,27 @@ fun RegistrationPage(
 
         Button(
             onClick= {
-                //Registration functionality
+                if (password == confirmPassword) {
+
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .addOnSuccessListener { result ->
+
+                            val userId = result.user?.uid
+
+                            if (userId != null) {
+                                val userData = hashMapOf(
+                                    "user_id" to userId,
+                                    "name" to fullName,
+                                    "email" to email,
+                                    "phone_number" to phoneNumber,
+                                    "user_type" to userType
+                                )
+                                db.collection("users")
+                                    .document(userId)
+                                    .set(userData)
+                            }
+                        }
+                }
             },
             modifier = Modifier.fillMaxWidth()
             ){
