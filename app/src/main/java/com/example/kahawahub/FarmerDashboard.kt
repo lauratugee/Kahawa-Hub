@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.font.Font
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -94,6 +95,23 @@ fun FarmerDashboard() {
             fontSize = 16.sp
         )
         Spacer(modifier = Modifier.height(25.dp))
+
+        Text(
+            text="Current Coffee Price",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier= Modifier.height(8.dp))
+
+        Text(
+            text="$coffeeType: $currency ${currentPrice.value} $priceUnit",
+            fontSize= 18.sp
+        )
+        Text(
+            text="Previous Price: $currency ${previousPrice.value} $priceUnit",
+            fontSize = 18.sp
+        )
+        Spacer(modifier= Modifier.height(25.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
