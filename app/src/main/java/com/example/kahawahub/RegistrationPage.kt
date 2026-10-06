@@ -193,7 +193,7 @@ fun RegistrationPage(
                     "Registration button clicked",
                     Toast.LENGTH_SHORT
                 ).show()
-                if (password !== confirmPassword) {
+                if (password != confirmPassword) {
 
                     Toast.makeText(
                         context,
