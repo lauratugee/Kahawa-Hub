@@ -73,6 +73,9 @@ fun KahawaHubApp() {
             LoginPage(
                 onRegistrationClick = {
                     currentScreen = "register"
+                },
+                onLoginSuccess = {
+                    currentScreen = "farmerDashboard"
                 }
             )
         }
@@ -83,6 +86,9 @@ fun KahawaHubApp() {
                     currentScreen = "login"
                 }
             )
+        }
+        "farmerDashboard" ->{
+            FarmerDashboard()
         }
     }
 
@@ -174,6 +180,7 @@ fun KahawaHubWelcomePage(
         }
 
     }
+
 
 
 
