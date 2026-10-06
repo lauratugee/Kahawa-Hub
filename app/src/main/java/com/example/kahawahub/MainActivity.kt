@@ -74,8 +74,14 @@ fun KahawaHubApp() {
                 onRegistrationClick = {
                     currentScreen = "register"
                 },
-                onLoginSuccess = {
-                    currentScreen = "farmerDashboard"
+                onLoginSuccess = { userType ->
+                    currentScreen= when(userType){
+                        "Farmer" -> "farmerDahsboard"
+                        "Cooperative Society" -> "cooperativeDashboard"
+                        else -> "Welcome"
+
+                    }
+
                 }
             )
         }
@@ -89,6 +95,9 @@ fun KahawaHubApp() {
         }
         "farmerDashboard" ->{
             FarmerDashboard()
+        }
+        "cooperativeDashboard" -> {
+            CooperativeDashboard()
         }
     }
 
