@@ -104,7 +104,7 @@ fun FarmerDashboard() {
         Spacer(modifier= Modifier.height(8.dp))
 
         Text(
-            text="${coffeeType.value}: ${currency} ${currentPrice.value} ${priceUnit.value}",
+            text="${coffeeType.value}: ${currency.value} ${currentPrice.value} ${priceUnit.value}",
             fontSize= 18.sp
         )
         Text(
