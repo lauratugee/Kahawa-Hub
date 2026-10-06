@@ -1,5 +1,6 @@
 package com.example.kahawahub
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,10 +26,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
 fun LoginPage(
-    onRegistrationClick: () -> Unit
+    onRegistrationClick: () -> Unit,
+    onLoginSuccess:() -> Unit
     ){
 
     var email by remember{
@@ -40,6 +44,7 @@ fun LoginPage(
     var rememberMe by remember {
         mutableStateOf(false)
     }
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,7 +112,26 @@ fun LoginPage(
 
         Button(
             onClick = {
-                //Login functionality
+                FirebaseAuth.getInstance()
+                    .signInWithEmailAndPassword(email,password)
+                    .addOnSuccessListener{
+                        Toast.makeText(
+                            context,
+                            "Login successful",
+                            Toast.LENGTH_SHORT
+                        ).show()
+
+                        onLoginSuccess()
+                    }
+                    .addOnFailureListener { exception ->
+                        Toast.makeText(
+                            context,
+                            "Login failed: ${exception.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+
+
             },
             modifier = Modifier.fillMaxWidth()
         ) {
