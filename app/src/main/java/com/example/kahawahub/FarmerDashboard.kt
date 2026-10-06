@@ -34,6 +34,7 @@ fun FarmerDashboard() {
     val previousPrice = remember { mutableStateOf(0L) }
     val currency = remember { mutableStateOf("") }
     val priceUnit = remember { mutableStateOf("") }
+    val priceChange = currentPrice.value - previousPrice.value
 
     LaunchedEffect(Unit){
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -110,6 +111,17 @@ fun FarmerDashboard() {
         Text(
             text="Previous Price: ${currency.value} ${previousPrice.value} ${priceUnit.value}",
             fontSize = 18.sp
+        )
+        Text(
+            text= if(priceChange > 0){
+                "Price increased by ${currency.value} ${priceChange} ${priceUnit.value}"
+            } else if (priceChange <0){
+                "Price decreased by ${currency.value} ${-priceChange} ${priceUnit.value}"
+            } else {
+                "Price has not changed"
+            },
+            fontSize=14.sp,
+            fontWeight = FontWeight.Bold
         )
         Spacer(modifier= Modifier.height(25.dp))
 
