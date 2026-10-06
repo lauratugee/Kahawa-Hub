@@ -28,6 +28,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun FarmerDashboard() {
 
     val userName = remember { mutableStateOf("Farmer") }
+    val coffeeType = remember { mutableStateOf("") }
+    val currentPrice = remember { mutableStateOf(0L) }
+    val previousPrice = remember { mutableStateOf(0L) }
+    val currency = remember { mutableStateOf("") }
+    val priceUnit = remember { mutableStateOf("") }
 
     LaunchedEffect(Unit){
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -40,6 +45,27 @@ fun FarmerDashboard() {
                 .addOnSuccessListener { document ->
                     if (document.exists()){
                         userName.value = document.getString("name") ?: "Farmer"
+                    }
+                }
+            FirebaseFirestore.getInstance()
+                .collection("coffee_prices")
+                .limit(1)
+                .get()
+                .addOnSuccessListener { documents ->
+                    val document = documents.documents.firstOrNull()
+
+                    if (document !=null){
+                        coffeeType.value =
+                            document.getString("coffee_type") ?:""
+                        currentPrice.value =
+                            document.getLong("price") ?: 0L
+                        previousPrice.value =
+                            document.getLong("previous_price") ?: 0L
+                        currency.value =
+                            document.getString("currency") ?: ""
+                        priceUnit.value =
+                            document.getString("price_unit") ?: ""
+
                     }
                 }
         }
