@@ -28,11 +28,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun LoginPage(
     onRegistrationClick: () -> Unit,
-    onLoginSuccess:() -> Unit
+    onLoginSuccess:(String) -> Unit
     ){
 
     var email by remember{
@@ -114,15 +115,29 @@ fun LoginPage(
             onClick = {
                 FirebaseAuth.getInstance()
                     .signInWithEmailAndPassword(email,password)
-                    .addOnSuccessListener{
-                        Toast.makeText(
-                            context,
-                            "Login successful",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                    .addOnSuccessListener {
+                        val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-                        onLoginSuccess()
+                        if (userId != null) {
+                            FirebaseFirestore.getInstance()
+                                .collection("users")
+                                .document(userId)
+                                .get()
+                                .addOnSuccessListener { document ->
+
+                                    val userType = document.getString("user_type") ?: ""
+
+                                    Toast.makeText(
+                                        context,
+                                        "Login successful",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    onLoginSuccess(userType)
+                                }
+                        }
                     }
+
                     .addOnFailureListener { exception ->
                         Toast.makeText(
                             context,
