@@ -76,9 +76,9 @@ fun KahawaHubApp() {
                 },
                 onLoginSuccess = { userType ->
                     currentScreen= when(userType){
-                        "Farmer" -> "farmerDahsboard"
+                        "Farmer" -> "farmerDashboard"
                         "Cooperative Society" -> "cooperativeDashboard"
-                        else -> "Welcome"
+                        else -> "welcome"
 
                     }
 
