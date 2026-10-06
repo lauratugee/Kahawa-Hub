@@ -118,7 +118,7 @@ fun RegistrationPage(
         OutlinedTextField(
             value=password,
             onValueChange = {
-                password=it
+                password=it.trim()
             },
             label={
                 Text("Password")
@@ -131,7 +131,7 @@ fun RegistrationPage(
         OutlinedTextField(
             value=confirmPassword,
             onValueChange = {
-                confirmPassword=it
+                confirmPassword=it.trim()
             },
             label={
                 Text("Confirm Password")
@@ -187,7 +187,28 @@ fun RegistrationPage(
 
         Button(
             onClick= {
-                if (password == confirmPassword) {
+
+                Toast.makeText(
+                    context,
+                    "Registration button clicked",
+                    Toast.LENGTH_SHORT
+                ).show()
+                if (password !== confirmPassword) {
+
+                    Toast.makeText(
+                        context,
+                        "Passwords do not match",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                } else if (userType.isEmpty()) {
+                    Toast.makeText(
+                        context,
+                        "Please select a user type",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                } else {
 
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnSuccessListener { result ->
@@ -215,13 +236,23 @@ fun RegistrationPage(
                                     .addOnFailureListener { exception ->
                                         Toast.makeText(
                                             context,
-                                            "Registration failed: ${exception.message}",
+                                            "Database error: ${exception.message}",
                                             Toast.LENGTH_LONG
                                         ).show()
 
+                                        }
+
                                     }
+
                             }
+                        .addOnFailureListener { exception ->
+                            Toast.makeText(
+                                context,
+                                "Registration failed: ${exception.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
+
                 }
             },
             modifier = Modifier.fillMaxWidth()
