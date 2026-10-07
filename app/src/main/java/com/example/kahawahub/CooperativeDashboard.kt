@@ -20,12 +20,15 @@ import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
 import androidx.compose.ui.text.font.FontWeight
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun  CooperativeDashboard(){
     val userName = remember { mutableStateOf("Cooperative Society") }
     val announcementTitle = remember { mutableStateOf("")}
     val announcementMessage= remember { mutableStateOf("")}
+    val context=LocalContext.current
 
     LaunchedEffect(Unit){
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -107,6 +110,25 @@ fun  CooperativeDashboard(){
                     FirebaseFirestore.getInstance()
                         .collection("announcements")
                         .add(announcement)
+                        .addOnSuccessListener {
+
+                            Toast.makeText(
+                                context,
+                                "Announcement posted successfully",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            announcementTitle.value=""
+                            announcementMessage.value=""
+                        }
+                        .addOnFailureListener {
+
+                            Toast.makeText(
+                                context,
+                                "Failed to post announcement",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                 }
 
             },
