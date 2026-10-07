@@ -7,13 +7,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 data class Cooperative(
+    val cooperativeId : String = "",
     val name : String = "",
     val location: String = "",
     val contactNumber : String = "",
-    val email : String = ""
+    val email : String = "",
+
 )
 
 @Composable
@@ -21,6 +26,9 @@ fun FindCooperativePage() {
     var cooperatives by remember {
         mutableStateOf<List<Cooperative>>(emptyList())
     }
+    val currentUserId=FirebaseAuth.getInstance().currentUser?.uid
+    val context = LocalContext.current
+
     var isLoading by remember {
         mutableStateOf(true)
     }
@@ -32,6 +40,7 @@ fun FindCooperativePage() {
             .addOnSuccessListener { result ->
                 cooperatives = result.documents.map { document ->
                     Cooperative(
+                        cooperativeId=document.id,
                         name = document.getString("name") ?: "",
                         location = document.getString("location") ?: "",
                         contactNumber = document.getString("contact_number") ?: "",
@@ -101,8 +110,35 @@ fun FindCooperativePage() {
 
                             Button(
                                 onClick = {
+                                    if (currentUserId != null){
+                                        FirebaseFirestore.getInstance()
+                                            .collection("farmers")
+                                            .document(currentUserId)
+                                            .set(
+                                                mapOf(
+                                                    "farmer_id" to currentUserId,
+                                                    "user_id" to currentUserId,
+                                                    "cooperative_id" to cooperative.cooperativeId
+                                                ),
+                                                com.google.firebase.firestore.SetOptions.merge()
+                                            )
+                                            .addOnSuccessListener {
+                                                Toast.makeText(
+                                                    context,
+                                                    "You have joined ${cooperative.name}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                            .addOnFailureListener { exception ->
+                                                Toast.makeText(
+                                                    context,
+                                                    "Failed to join ${exception.message}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                    }
 
-                                }
+                                },
                             ) {
                                 Text("Join Cooperative")
                             }
