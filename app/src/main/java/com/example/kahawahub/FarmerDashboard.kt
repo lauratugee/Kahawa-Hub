@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +27,9 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 
 @Composable
-fun FarmerDashboard() {
+fun FarmerDashboard(
+    onFindCooperativeClick:() -> Unit
+) {
 
     val userName = remember { mutableStateOf("Farmer") }
     val coffeeType = remember { mutableStateOf("") }
@@ -129,6 +132,14 @@ fun FarmerDashboard() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Button(
+                onClick={
+                    onFindCooperativeClick()
+                },
+                modifier=Modifier.fillMaxWidth()
+            ){
+                Text("Find a cooperative")
+            }
 
         }
 
