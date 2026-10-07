@@ -56,9 +56,17 @@ fun RegistrationPage(
     var userTypeExpanded by remember {
         mutableStateOf(false)
     }
+    var cooperativeName by remember {
+        mutableStateOf("")
+    }
+    var cooperativeLocation by remember {
+        mutableStateOf("")
+    }
+
     val auth= FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
     val context=LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -183,7 +191,33 @@ fun RegistrationPage(
             )
 
         }
-        Spacer(modifier = Modifier.height(15.dp))
+        if (userType== "Cooperative Society"){
+            Spacer(modifier=Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value=cooperativeName,
+                onValueChange = {
+                    cooperativeName=it
+                },
+                label={
+                    Text("Cooperative Name")
+                },
+                modifier= Modifier.fillMaxWidth()
+            )
+            Spacer(modifier=Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value=cooperativeLocation,
+                onValueChange = {
+                    cooperativeLocation=it
+                },
+                label={
+                    Text("Cooperative Location")
+                },
+                modifier=Modifier.fillMaxWidth()
+            )
+        }
+        Spacer(modifier=Modifier.height(15.dp ))
 
         Button(
             onClick= {
