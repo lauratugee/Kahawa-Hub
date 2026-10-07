@@ -94,7 +94,14 @@ fun KahawaHubApp() {
             )
         }
         "farmerDashboard" ->{
-            FarmerDashboard()
+            FarmerDashboard(
+                onFindCooperativeClick = {
+                    currentScreen="findCooperative"
+                }
+            )
+        }
+        "findCooperative" -> {
+            FindCooperativePage()
         }
         "cooperativeDashboard" -> {
             CooperativeDashboard()
