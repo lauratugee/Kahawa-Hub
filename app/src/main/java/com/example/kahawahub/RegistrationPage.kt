@@ -221,30 +221,32 @@ fun RegistrationPage(
 
         Button(
             onClick= {
-
-                Toast.makeText(
-                    context,
-                    "Registration button clicked",
-                    Toast.LENGTH_SHORT
-                ).show()
-                if (password != confirmPassword) {
-
+                if (password != confirmPassword){
                     Toast.makeText(
                         context,
                         "Passwords do not match",
                         Toast.LENGTH_SHORT
                     ).show()
-
                 } else if (userType.isEmpty()) {
                     Toast.makeText(
                         context,
                         "Please select a user type",
                         Toast.LENGTH_SHORT
                     ).show()
-
+                } else if (
+                    userType == "Cooperative Society" &&
+                    (cooperativeName.isEmpty() || cooperativeLocation.isEmpty())
+                ){
+                    Toast.makeText(
+                        context,
+                        "Please enter your cooperative name and location",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
-
-                    auth.createUserWithEmailAndPassword(email, password)
+                    auth.createUserWithEmailAndPassword(
+                        email,
+                        password
+                    )
                         .addOnSuccessListener { result ->
 
                             val userId = result.user?.uid
@@ -261,11 +263,43 @@ fun RegistrationPage(
                                     .document(userId)
                                     .set(userData)
                                     .addOnSuccessListener {
-                                        Toast.makeText(
-                                            context,
-                                            "Registration successful",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+
+                                        if (userType == "Cooperative Society") {
+
+                                            val cooperativeData = hashMapOf(
+                                                "cooperative_id" to userId,
+                                                "name" to cooperativeName,
+                                                "location" to cooperativeLocation,
+                                                "contact_number" to phoneNumber,
+                                                "email" to email,
+                                                "created_at" to System.currentTimeMillis()
+                                            )
+                                            db.collection("cooperatives")
+                                                .document(userId)
+                                                .set(cooperativeData)
+                                                .addOnSuccessListener {
+
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Registration successful",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                                .addOnFailureListener { exception ->
+
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Cooperative database error: ${exception.message}",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Registration successful",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
                                     .addOnFailureListener { exception ->
                                         Toast.makeText(
@@ -273,40 +307,39 @@ fun RegistrationPage(
                                             "Database error: ${exception.message}",
                                             Toast.LENGTH_LONG
                                         ).show()
-
-                                        }
-
                                     }
-
                             }
-                        .addOnFailureListener { exception ->
-                            Toast.makeText(
-                                context,
-                                "Registration failed: ${exception.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
                         }
+                                    .addOnFailureListener { exception ->
+                                        Toast.makeText(
+                                            context,
+                                            "Registration failed: ${exception.message}",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                            }
+                        },
+                    modifier = Modifier.fillMaxWidth()
+                    ){
+            Text("REGISTER")
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text="Already have an account?"
+                    )
+                    TextButton(
+                        onClick = onLoginClick
+                    ) {
+                        Text("Login")
+
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+
 
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-            ){
-            Text("REGISTER")
-        }
-        Spacer(modifier = Modifier.height(12.dp))
 
-        Text(
-            text="Already have an account?"
-        )
-        TextButton(
-            onClick = onLoginClick
-        ) {
-            Text("Login")
-
-        }
-        Spacer(modifier = Modifier.height(20.dp))
+            }
 
 
-    }
 
-}
