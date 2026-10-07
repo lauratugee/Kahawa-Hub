@@ -2,24 +2,35 @@ package com.example.kahawahub
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun  CooperativeDashboard(){
     val userName = remember { mutableStateOf("Cooperative Society") }
+    val announcementTitle = remember { mutableStateOf("")}
+    val announcementMessage= remember { mutableStateOf("")}
 
     LaunchedEffect(Unit){
         val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+
 
         if(userId != null){
             FirebaseFirestore.getInstance()
@@ -46,6 +57,51 @@ fun  CooperativeDashboard(){
             text="Welcome, ${userName.value}",
             fontSize=18.sp
         )
+        Spacer(modifier=Modifier.height(24.dp))
+
+        Text(
+            text="Create Announcement",
+            fontSize= 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier= Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value=announcementTitle.value,
+            onValueChange = {
+                announcementTitle.value = it
+            },
+            label={
+                Text("Announcement Title")
+            },
+            modifier=Modifier.fillMaxWidth(),
+
+        )
+        Spacer(modifier=Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value=announcementMessage.value,
+            onValueChange = {
+                announcementMessage.value=it
+            },
+            label={
+                Text("Announcement Message")
+            },
+            modifier=Modifier.fillMaxWidth(),
+            minLines=4
+        )
+        Spacer(modifier=Modifier.height(16.dp))
+
+        Button(
+            onClick={
+
+            },
+            modifier = Modifier.fillMaxWidth()
+        ){
+            Text("Post Announcement")
+
+
+        }
 
     }
 }
