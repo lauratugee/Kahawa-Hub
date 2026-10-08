@@ -110,7 +110,7 @@ fun KahawaHubApp() {
                 }
             )
         }
-        "coffeePries" -> {
+        "coffeePrices" -> {
             CoffeePrices()
         }
     }
