@@ -28,53 +28,30 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun FarmerDashboard(
-    onFindCooperativeClick:() -> Unit
+    onFindCooperativeClick:() -> Unit,
+    onViewCoffeePricesClick: () -> Unit
 ) {
+    val userName=remember {
+        mutableStateOf("Farmer")
+    }
 
-    val userName = remember { mutableStateOf("Farmer") }
-    val coffeeType = remember { mutableStateOf("") }
-    val currentPrice = remember { mutableStateOf(0L) }
-    val previousPrice = remember { mutableStateOf(0L) }
-    val currency = remember { mutableStateOf("") }
-    val priceUnit = remember { mutableStateOf("") }
-    val priceChange = currentPrice.value - previousPrice.value
-
-    LaunchedEffect(Unit){
+    LaunchedEffect(Unit) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-        if (userId !=null){
+        if (userId != null) {
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(userId)
                 .get()
                 .addOnSuccessListener { document ->
-                    if (document.exists()){
+
+                    if (document.exists()) {
                         userName.value = document.getString("name") ?: "Farmer"
-                    }
-                }
-            FirebaseFirestore.getInstance()
-                .collection("coffee_prices")
-                .limit(1)
-                .get()
-                .addOnSuccessListener { documents ->
-                    val document = documents.documents.firstOrNull()
-
-                    if (document !=null){
-                        coffeeType.value =
-                            document.getString("coffee_type") ?:""
-                        currentPrice.value =
-                            document.getLong("price") ?: 0L
-                        previousPrice.value =
-                            document.getLong("previous_price") ?: 0L
-                        currency.value =
-                            document.getString("currency") ?: ""
-                        priceUnit.value =
-                            document.getString("price_unit") ?: ""
-
                     }
                 }
         }
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -100,38 +77,20 @@ fun FarmerDashboard(
         )
         Spacer(modifier = Modifier.height(25.dp))
 
-        Text(
-            text="Current Coffee Price",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier= Modifier.height(8.dp))
+        Column(
+            modifier = Modifier.fillMaxWidth()
 
-        Text(
-            text="${coffeeType.value}: ${currency.value} ${currentPrice.value} ${priceUnit.value}",
-            fontSize= 18.sp
-        )
-        Text(
-            text="Previous Price: ${currency.value} ${previousPrice.value} ${priceUnit.value}",
-            fontSize = 18.sp
-        )
-        Text(
-            text= if(priceChange > 0){
-                "Price increased by ${currency.value} ${priceChange} ${priceUnit.value}"
-            } else if (priceChange <0){
-                "Price decreased by ${currency.value} ${-priceChange} ${priceUnit.value}"
-            } else {
-                "Price has not changed"
-            },
-            fontSize=14.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier= Modifier.height(25.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Button(
+                onClick={
+                    onViewCoffeePricesClick()
+                },
+                modifier=Modifier.fillMaxWidth()
+            ){
+                Text("Coffee Prices")
+            }
+        Spacer(modifier=Modifier.height(12.dp))
+
             Button(
                 onClick={
                     onFindCooperativeClick()
