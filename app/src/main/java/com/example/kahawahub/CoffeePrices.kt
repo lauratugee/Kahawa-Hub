@@ -47,7 +47,7 @@ fun CoffeePrices() {
                 price = it
             },
             label = {
-                Text("Currrent Price(KES per kg")
+                Text("Current Price(KES per kg")
             },
             modifier = Modifier.fillMaxWidth()
         )
@@ -67,66 +67,120 @@ fun CoffeePrices() {
 
                     val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-                    db.collection("coffee_prices")
-                        .whereEqualTo("cooperative_id", userId)
-                        .whereEqualTo("coffee_type", coffeeType)
-                        .get()
-                        .addOnSuccessListener { documents ->
+                    if (userId == null) {
+                        Toast.makeText(
+                            context,
+                            "User not logged in",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    } else {
 
-                            val previousPrice =
-                                documents.documents.firstOrNull()
-                                    ?.getLong("price") ?: 0L
+                        db.collection("coffee_prices")
+                            .whereEqualTo("cooperative_id", userId)
+                            .whereEqualTo("coffee_type", coffeeType)
+                            .get()
+                            .addOnSuccessListener { documents ->
 
-                            val priceData = hashMapOf(
-                                "cooperative_id" to userId,
-                                "coffee_type" to coffeeType,
-                                "price" to price.toLong(),
-                                "previous_price" to previousPrice,
-                                "currency" to "KES",
-                                "price_unit" to "per kg",
-                                "date_updated" to System.currentTimeMillis(),
-                                "source" to "Cooperative"
-                            )
-                            db.collection("coffee_prices")
-                                .add(priceData)
-                                .addOnSuccessListener {
+                                val existingDocument =
+                                    documents.documents.firstOrNull()
 
-                                    Toast.makeText(
-                                        context,
-                                        "Coffee price updated successfully",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                val previousPrice =
+                                    documents.documents.firstOrNull()
+                                        ?.getLong("price") ?: 0L
 
-                                    coffeeType = ""
-                                    price = ""
+                                val priceData = hashMapOf<String, Any>()
+                                priceData["cooperative_id"] = userId
+                                priceData["coffee_type"] = coffeeType
+                                priceData["price"] = price.toLong()
+                                priceData["previous_price"] = previousPrice
+                                priceData["currency"] = "KES"
+                                priceData["price_unit"] = "per kg"
+                                priceData["date_updated"] = System.currentTimeMillis()
+                                priceData["source"] = "Cooperative"
+
+
+                                if (existingDocument != null) {
+
+                                    existingDocument.reference
+                                        .update(priceData)
+                                        .addOnSuccessListener {
+
+                                            Toast.makeText(
+                                                context,
+                                                "Coffee price updated successfully",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+
+                                            coffeeType = ""
+                                            price = ""
+                                        }
+                                        .addOnFailureListener { exception ->
+
+                                            Toast.makeText(
+                                                context,
+                                                "Database error: ${exception.message}",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+
+                                } else {
+                                    db.collection("coffee_prices")
+                                        .add(priceData)
+                                        .addOnSuccessListener {
+
+                                            Toast.makeText(
+                                                context,
+                                                "Coffee price added successfully",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+
+                                            coffeeType = ""
+                                            price = ""
+                                        }
+                                        .addOnFailureListener { exception ->
+
+                                            Toast.makeText(
+                                                context,
+                                                "Database error: ${exception.message}",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
                                 }
-                                .addOnFailureListener { exception ->
+                            }
+                            .addOnFailureListener { exception ->
 
-                                    Toast.makeText(
-                                        context,
-                                        "Database error: ${exception.message}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                        }
-                        .addOnFailureListener { exception ->
-
-                            Toast.makeText(
-                                context,
-                                "Could not check previous price: ${exception.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+                                Toast.makeText(
+                                    context,
+                                    "Could not check previous price  ${exception.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
                 }
-
             },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Update Price")
-
-
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
