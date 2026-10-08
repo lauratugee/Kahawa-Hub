@@ -104,7 +104,14 @@ fun KahawaHubApp() {
             FindCooperativePage()
         }
         "cooperativeDashboard" -> {
-            CooperativeDashboard()
+            CooperativeDashboard(
+                onManagePricesClick = {
+                    currentScreen = "coffeePrices"
+                }
+            )
+        }
+        "coffeePries" -> {
+            CoffeePrices()
         }
     }
 
