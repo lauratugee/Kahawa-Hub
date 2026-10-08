@@ -24,7 +24,10 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun  CooperativeDashboard(){
+fun  CooperativeDashboard(
+    onManagePricesClick: () -> Unit
+
+){
     val userName = remember { mutableStateOf("Cooperative Society") }
     val announcementTitle = remember { mutableStateOf("")}
     val announcementMessage= remember { mutableStateOf("")}
@@ -137,6 +140,16 @@ fun  CooperativeDashboard(){
             Text("Post Announcement")
 
 
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick={
+                onManagePricesClick()
+            },
+            modifier= Modifier.fillMaxWidth()
+        ){
+            Text("Manage coffee prices")
         }
 
     }
