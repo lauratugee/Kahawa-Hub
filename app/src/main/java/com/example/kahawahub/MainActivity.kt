@@ -117,7 +117,11 @@ fun KahawaHubApp() {
             )
         }
         "coffeePrices" -> {
-            CoffeePrices()
+            CoffeePrices(
+                onBackClick={
+                    currentScreen="cooperativeDashboard"
+                }
+            )
         }
     }
 
