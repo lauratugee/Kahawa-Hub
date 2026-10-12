@@ -141,7 +141,7 @@ fun LoginPage(
                     .addOnFailureListener { exception ->
                         Toast.makeText(
                             context,
-                            "Login failed: ${exception.message}",
+                            "Login failed:(${exception.javaClass.simpleName}): ${exception.message}",
                             Toast.LENGTH_LONG
                         ).show()
                     }

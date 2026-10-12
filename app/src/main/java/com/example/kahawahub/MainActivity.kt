@@ -104,10 +104,13 @@ fun KahawaHubApp() {
             )
         }
         "findCooperative" -> {
-            FindCooperativePage()
+            FindCooperativePage(
+                onBackClick = { currentScreen="farmerDashboard"}
+            )
         }
         "coffeeMarketPrices" -> {
             CoffeeMarketPricesPage()
+
         }
         "cooperativeDashboard" -> {
             CooperativeDashboard(
@@ -161,7 +164,7 @@ fun KahawaHubWelcomePage(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .safeDrawingPadding()
+                .padding(innerPadding)
                 .padding(
                     start = 30.dp,
                     end = 30.dp,

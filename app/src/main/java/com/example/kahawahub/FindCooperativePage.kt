@@ -22,7 +22,9 @@ data class Cooperative(
 )
 
 @Composable
-fun FindCooperativePage() {
+fun FindCooperativePage(
+    onBackClick: () -> Unit
+) {
     var cooperatives by remember {
         mutableStateOf<List<Cooperative>>(emptyList())
     }
@@ -58,6 +60,13 @@ fun FindCooperativePage() {
             .fillMaxSize()
             .padding(20.dp)
     ) {
+        Button(
+            onClick = { onBackClick()}
+        ){
+            Text ("Back")
+
+        }
+        Spacer(modifier=Modifier.height(12.dp))
         Text(
             text = "Find a cooperative",
             style = MaterialTheme.typography.headlineMedium
