@@ -19,7 +19,9 @@ data class MarketPrice(
 )
 
 @Composable
-fun CoffeeMarketPricesPage() {
+fun CoffeeMarketPricesPage(
+    onBackClick: () -> Unit
+) {
     var prices by remember {
         mutableStateOf<List<MarketPrice>>(emptyList())
     }
@@ -56,6 +58,12 @@ fun CoffeeMarketPricesPage() {
             .fillMaxSize()
             .padding(20.dp)
     ){
+        Button(
+
+                onClick = { onBackClick()}
+            ) {
+            Text("Back")
+        }
         Text(
             text="Coffee Market Prices",
             style= MaterialTheme.typography.headlineMedium

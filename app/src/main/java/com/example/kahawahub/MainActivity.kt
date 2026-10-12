@@ -109,7 +109,9 @@ fun KahawaHubApp() {
             )
         }
         "coffeeMarketPrices" -> {
-            CoffeeMarketPricesPage()
+            CoffeeMarketPricesPage(
+                onBackClick = { currentScreen="farmerDashboard"}
+            )
 
         }
         "cooperativeDashboard" -> {
