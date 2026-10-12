@@ -56,6 +56,10 @@ fun KahawaHubApp() {
     var currentScreen by remember {
         mutableStateOf("welcome")
     }
+    var profileReturnScreen by remember {
+        mutableStateOf("farmerDashbpard")
+
+    }
     when (currentScreen) {
 
         "welcome" -> {
@@ -100,6 +104,10 @@ fun KahawaHubApp() {
                 },
                 onViewCoffeePricesClick = {
                     currentScreen="coffeeMarketPrices"
+                },
+                onProfileClick = {
+                    profileReturnScreen="farmerDashboard"
+                    currentScreen="myProfile"
                 }
             )
         }
@@ -125,6 +133,13 @@ fun KahawaHubApp() {
             CoffeePrices(
                 onBackClick={
                     currentScreen="cooperativeDashboard"
+                }
+            )
+        }
+        "myProfile" -> {
+            ProfilePage (
+                onBackClick = {
+                    currentScreen=profileReturnScreen
                 }
             )
         }

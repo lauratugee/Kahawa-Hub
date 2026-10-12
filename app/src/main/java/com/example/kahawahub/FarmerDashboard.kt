@@ -29,7 +29,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 @Composable
 fun FarmerDashboard(
     onFindCooperativeClick:() -> Unit,
-    onViewCoffeePricesClick: () -> Unit
+    onViewCoffeePricesClick: () -> Unit,
+    onProfileClick: () -> Unit
 ) {
     val userName=remember {
         mutableStateOf("Farmer")
@@ -99,6 +100,18 @@ fun FarmerDashboard(
             ){
                 Text("Find a cooperative")
             }
+            Spacer(modifier=Modifier.height(12.dp))
+
+            Button(
+                onProfileClick,
+                modifier = Modifier.fillMaxWidth()
+            ){
+                Text("My Profile")
+            }
+
+
+
+
 
         }
 
