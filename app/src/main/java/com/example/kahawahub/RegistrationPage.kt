@@ -28,6 +28,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import android.util.Log
+import com.google.firebase.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
+
 
 
 
@@ -263,6 +267,33 @@ fun RegistrationPage(
                                     .document(userId)
                                     .set(userData)
                                     .addOnSuccessListener {
+                                        FirebaseMessaging.getInstance().token
+                                            .addOnSuccessListener { token ->
+                                                db.collection("users")
+                                                    .document(userId)
+                                                    .update("fcm_token",token)
+                                                    .addOnSuccessListener {
+                                                        Log.d(
+                                                            "KahawaFCM",
+                                                            "FCM token saved after registration"
+                                                        )
+                                                    }
+                                                    .addOnFailureListener { exception ->
+                                                        Log.e(
+                                                            "KahawaFCM",
+                                                            "Could not save FCM token after registration",
+                                                            exception
+                                                        )
+                                                    }
+
+                                            }
+                                            .addOnFailureListener { exception ->
+                                                Log.e(
+                                                    "KahawaFCM",
+                                                    "Could not retrieve FCM token after registration",
+                                                    exception
+                                                )
+                                            }
 
                                         if (userType == "Cooperative Society") {
 

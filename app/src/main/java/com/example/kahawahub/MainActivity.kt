@@ -42,10 +42,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-
+import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
 import com.example.kahawahub.ui.theme.KahawaHubTheme
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +72,7 @@ fun KahawaHubApp() {
         rememberLauncherForActivityResult(
             contract= ActivityResultContracts.RequestPermission()
         ) {  isGranted ->
-            android.util.Log.d(
+            Log.d(
                 "KahawaNotifications",
                 "Notification permission granted: $isGranted"
             )
@@ -116,6 +119,7 @@ fun KahawaHubApp() {
                     currentScreen = "register"
                 },
                 onLoginSuccess = { userType ->
+                    saveFcmForCurrentUser()
                     currentScreen= when(userType){
                         "Farmer" -> "farmerDashboard"
                         "Cooperative Society" -> "cooperativeDashboard"
@@ -192,6 +196,42 @@ fun KahawaHubApp() {
     }
 
 
+}
+private fun saveFcmForCurrentUser(){
+    val userId= FirebaseAuth.getInstance().currentUser?.uid
+        ?: return
+
+    FirebaseMessaging.getInstance().token
+        .addOnSuccessListener { token ->
+
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .set(
+                    mapOf("fcm_token" to token),
+                    SetOptions.merge()
+                )
+                .addOnSuccessListener {
+                    Log.d(
+                        "KahawaFCM",
+                        "FCM token saved successfully"
+                    )
+                }
+                .addOnFailureListener { exception ->
+                    Log.e(
+                        "KahawaFCM",
+                        "Could not save FCM token",
+                        exception
+                    )
+                }
+        }
+        .addOnFailureListener { exception ->
+            Log.e(
+                "KahawaFCM",
+                "Could not retrieve FCM token",
+                exception
+            )
+        }
 }
 
 @Composable

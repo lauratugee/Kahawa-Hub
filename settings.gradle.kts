@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "CoffeeKonnect"
+rootProject.name = "KahawaHub"
 include(":app")
