@@ -128,7 +128,12 @@ fun KahawaHubApp() {
             CooperativeDashboard(
                 onManagePricesClick = {
                     currentScreen = "coffeePrices"
+                },
+                onLogoutClick = {
+                    FirebaseAuth.getInstance().signOut()
+                    currentScreen="welcome"
                 }
+
             )
         }
         "coffeePrices" -> {

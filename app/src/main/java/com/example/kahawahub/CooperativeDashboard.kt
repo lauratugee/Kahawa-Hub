@@ -21,11 +21,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Button
 import androidx.compose.ui.text.font.FontWeight
 import android.widget.Toast
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun  CooperativeDashboard(
-    onManagePricesClick: () -> Unit
+    onManagePricesClick: () -> Unit,
+    onLogoutClick: () -> Unit
 
 ){
     val userName = remember { mutableStateOf("Cooperative Society") }
@@ -151,6 +154,15 @@ fun  CooperativeDashboard(
         ){
             Text("Manage coffee prices")
         }
+        Button(
+            onClick = { onLogoutClick()},
+            modifier = Modifier.fillMaxWidth(),
+            colors= ButtonDefaults.buttonColors(
+            )
+        ){
+            Text("LogOut")
+
+            }
 
     }
 }
