@@ -24,6 +24,7 @@ import android.widget.Toast
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.OutlinedButton
 
 @Composable
 fun  CooperativeDashboard(
@@ -154,10 +155,11 @@ fun  CooperativeDashboard(
         ){
             Text("Manage coffee prices")
         }
-        Button(
+        OutlinedButton(
             onClick = { onLogoutClick()},
             modifier = Modifier.fillMaxWidth(),
-            colors= ButtonDefaults.buttonColors(
+            colors= ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
             )
         ){
             Text("LogOut")

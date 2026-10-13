@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import java.nio.file.WatchEvent
-
+import com.google.firebase.firestore.FieldValue
 
 @Composable
 fun ProfilePage(
@@ -173,6 +174,52 @@ fun ProfilePage(
                 "Cooperative details not available"
             }
         )
+        if(
+            userType=="Farmer" &&
+            cooperativeName.isNotBlank()
+        ){
+            OutlinedButton(
+                onClick = {
+                    val userId=currentUser?.uid
+
+                    if (userId!=null){
+                        db.collection("farmers")
+                            .document(userId)
+                            .update(
+                                "cooperative_id",
+                                FieldValue.delete()
+
+                            )
+                            .addOnSuccessListener {
+                                cooperativeName=""
+                                cooperativeLocation=""
+
+                                Toast.makeText(
+                                    context,
+                                    "You have lefft the cooperative",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(
+                                    context,
+                                    "Could not leave cooperative",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
+
+                },
+                modifier=Modifier.fillMaxWidth(),
+                colors= ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+
+            ){
+                Text("Leave Cooperative")
+            }
+
+        }
 
 
         Button(
