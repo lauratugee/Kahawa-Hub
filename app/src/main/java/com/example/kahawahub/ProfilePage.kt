@@ -18,10 +18,14 @@ import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import java.nio.file.WatchEvent
 
 
 @Composable
-fun ProfilePage(onBackClick: () -> Unit) {
+fun ProfilePage(
+    onBackClick: () -> Unit,
+    onLogoutClick:() -> Unit
+){
 
     val context = LocalContext.current
     val currentUser = FirebaseAuth.getInstance().currentUser
@@ -31,6 +35,8 @@ fun ProfilePage(onBackClick: () -> Unit) {
     var phoneNumber by remember { mutableStateOf("") }
     var email by remember { mutableStateOf(currentUser?.email ?: "") }
     var userType by remember { mutableStateOf("") }
+    var cooperativeName by remember { mutableStateOf("") }
+    var cooperativeLocation by remember { mutableStateOf("") }
 
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
@@ -59,7 +65,29 @@ fun ProfilePage(onBackClick: () -> Unit) {
                         Toast.LENGTH_LONG
                     ).show()
                 }
+            db.collection("farmers")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { farmerDocument ->
+
+                    val cooperativeId =
+                        farmerDocument.getString("cooperative_id")
+
+                    if (!cooperativeId.isNullOrBlank()) {
+                        db.collection("cooperatives")
+                            .document(cooperativeId)
+                            .get()
+                            .addOnSuccessListener { cooperativeDocument ->
+
+                                cooperativeName =
+                                    cooperativeDocument.getString("name") ?: ""
+                                cooperativeLocation =
+                                    cooperativeDocument.getString("location") ?: ""
+                            }
+                    }
+                }
         }
+
     }
 
 
@@ -133,13 +161,20 @@ fun ProfilePage(onBackClick: () -> Unit) {
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            if (userType.equals("Farmer", ignoreCase = true)) {
-                "Your membership will appear here"
-            } else {
-                "Membership details will be available here"
-            }
+            text = if (userType.equals("Farmer", ignoreCase = true)) {
 
+                if (cooperativeName.isNotBlank()) {
+                    "Cooperative: $cooperativeName\n" +
+                            "Location: $cooperativeLocation"
+                } else {
+                    "Not joined a cooperative yet"
+                }
+            } else {
+                "Cooperative details not available"
+            }
         )
+
+
         Button(
             onClick = {
                 val userId = currentUser?.uid
@@ -201,8 +236,18 @@ fun ProfilePage(onBackClick: () -> Unit) {
                 Text("Save Changes")
             }
         }
+        OutlinedButton(
+            onClick = { onLogoutClick()},
+            modifier = Modifier.fillMaxWidth(),
+            colors= ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Text("LogOut")
+        }
     }
 }
+
 
 
 

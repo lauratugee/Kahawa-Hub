@@ -35,6 +35,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 
 import com.example.kahawahub.ui.theme.KahawaHubTheme
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -140,6 +142,10 @@ fun KahawaHubApp() {
             ProfilePage (
                 onBackClick = {
                     currentScreen=profileReturnScreen
+                },
+                onLogoutClick = {
+                    FirebaseAuth.getInstance().signOut()
+                    currentScreen="welcome"
                 }
             )
         }
