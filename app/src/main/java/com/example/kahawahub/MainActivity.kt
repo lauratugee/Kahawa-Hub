@@ -33,6 +33,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 
 import com.example.kahawahub.ui.theme.KahawaHubTheme
 import com.google.firebase.Firebase
@@ -54,6 +63,32 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun KahawaHubApp() {
+    val context= LocalContext.current
+
+    val notificationPermissionLauncher=
+        rememberLauncherForActivityResult(
+            contract= ActivityResultContracts.RequestPermission()
+        ) {  isGranted ->
+            android.util.Log.d(
+                "KahawaNotifications",
+                "Notification permission granted: $isGranted"
+            )
+        }
+    LaunchedEffect(Unit){
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            val permissionGranted=
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+
+            if(!permissionGranted){
+                notificationPermissionLauncher.launch(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            }
+        }
+    }
 
     var currentScreen by remember {
         mutableStateOf("welcome")
