@@ -17,8 +17,31 @@ import java.util.Date
 import java.util.Locale
 
 private data class AnnouncementItem(
-    val id: S
+    val id: String,
+    val title: String,
+    val message: String,
+    val createdAt: Long
 )
 
-class AnnouncementsPage {
+@Composable
+fun AnnouncementsPage (
+    onBackClick: () -> Unit
+) {
+    val db= FirebaseFirestore.getInstance()
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+    val announcements by remember {
+        mutableStateOf<List<AnnouncementItem>>(emptyList())
+
+    }
+    var isLoading by remember { mutableStateOf(true) }
+    var hasCooperative by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(userId){
+        if(userId==null){
+            isLoading=false
+            errorMessage="Please log in to view announcements"
+        }
+}
 }
