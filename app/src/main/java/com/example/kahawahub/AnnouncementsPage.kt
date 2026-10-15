@@ -31,7 +31,7 @@ fun AnnouncementsPage (
     val db= FirebaseFirestore.getInstance()
     val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-    val announcements by remember {
+    var announcements by remember {
         mutableStateOf<List<AnnouncementItem>>(emptyList())
 
     }
@@ -70,7 +70,8 @@ fun AnnouncementsPage (
                                 announcements=result.documents.map { document ->
                                     AnnouncementItem(
                                         id=document.id,
-                                        title=document.getString("title")
+                                        title=document.getString("title") ?: "Announcement",
+                                        message=document.getString("message")
                                             ?: document.getString("body")
                                             ?: "",
                                         createdAt=
