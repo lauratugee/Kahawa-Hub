@@ -30,7 +30,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun FarmerDashboard(
     onFindCooperativeClick:() -> Unit,
     onViewCoffeePricesClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onAnnouncementsClick:() -> Unit
 ) {
     val userName=remember {
         mutableStateOf("Farmer")
@@ -107,6 +108,14 @@ fun FarmerDashboard(
                 modifier = Modifier.fillMaxWidth()
             ){
                 Text("My Profile")
+            }
+            Spacer(modifier=Modifier.height(12.dp))
+
+            Button(
+                onClick=onAnnouncementsClick,
+                modifier= Modifier.fillMaxWidth()
+            ){
+                Text("Announcements")
             }
 
 
