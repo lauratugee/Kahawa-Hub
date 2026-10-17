@@ -75,7 +75,8 @@ fun AnnouncementsPage (
                                             ?: document.getString("body")
                                             ?: "",
                                         createdAt=
-                                            document.getLong("created_at")
+                                            document.getLong("date_posted")
+                                                ?: document.getLong("created_at")
                                                 ?: 0L
                                     )
                                 }.sortedByDescending { it.createdAt }

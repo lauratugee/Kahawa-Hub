@@ -111,6 +111,7 @@ fun  CooperativeDashboard(
                         "title" to announcementTitle.value,
                         "message" to announcementMessage.value,
                         "posted_by" to userId,
+                        "cooperative_id" to userId,
                         "date_posted" to System.currentTimeMillis(),
                         "target_audience" to "Farmers"
                     )

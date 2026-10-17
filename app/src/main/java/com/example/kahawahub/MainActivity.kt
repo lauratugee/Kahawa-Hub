@@ -149,6 +149,9 @@ fun KahawaHubApp() {
                 onProfileClick = {
                     profileReturnScreen="farmerDashboard"
                     currentScreen="myProfile"
+                },
+                onAnnouncementsClick = {
+                    currentScreen="announcements"
                 }
             )
         }
@@ -190,6 +193,13 @@ fun KahawaHubApp() {
                 onLogoutClick = {
                     FirebaseAuth.getInstance().signOut()
                     currentScreen="welcome"
+                }
+            )
+        }
+        "announcements" -> {
+            AnnouncementsPage(
+                onBackClick = {
+                    currentScreen="farmerDashboard"
                 }
             )
         }
