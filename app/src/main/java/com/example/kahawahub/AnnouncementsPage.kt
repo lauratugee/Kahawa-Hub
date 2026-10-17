@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.nio.file.WatchEvent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -162,7 +161,16 @@ fun AnnouncementsPage (
                                  modifier=Modifier.padding(16.dp),
                                  verticalArrangement = Arrangement.spacedBy(8.dp)
                              ){
-                                 Text(announcement.message)
+                                 Text(
+                                     text=announcement.title,
+                                     fontSize = 18.sp,
+                                     fontWeight = FontWeight.Bold,
+                                     color=MaterialTheme.colorScheme.primary
+                                 )
+                                 Text(
+                                     text=announcement.message,
+                                     style= MaterialTheme.typography.bodyMedium
+                                 )
 
                                  if(announcement.createdAt > 0L){
                                      Text(
