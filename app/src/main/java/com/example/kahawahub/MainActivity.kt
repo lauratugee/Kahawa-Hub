@@ -45,11 +45,17 @@ import androidx.core.content.ContextCompat
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessaging
 import com.example.kahawahub.ui.theme.KahawaHubTheme
-import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.ui.text.style.LineHeightStyle
 
+
+private val CoffeeCream = Color(0xFFF7F3E9)
+private val CoffeeBrown = Color(0xFF684832)
+private val ForestGreen = Color(0xFF245640)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -249,62 +255,59 @@ fun KahawaHubWelcomePage(
     onLoginClick: () -> Unit,
     onRegistrationClick: () -> Unit
 ){
-    Box(
-        modifier = Modifier.fillMaxSize()
+    Column(
+        modifier= Modifier
+            .fillMaxSize()
+            .background(CoffeeCream)
+            .safeDrawingPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally
     ){
+
         Image(
             painter=painterResource(
                 id=R.drawable.welcomepagepic
             ),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
+            contentDescription = "Coffee farm",
+            modifier = Modifier.fillMaxSize().weight(1f),
             contentScale = ContentScale.Crop
 
         )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background((
-                        Color.Black.copy(alpha=0.35f)
-                        )
-
-                )
-        )
-    }
-    Scaffold(
-        modifier = Modifier.fillMaxSize()
-    ){ innerPadding ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .fillMaxWidth()
+                .weight(1f)
                 .padding(
-                    start = 30.dp,
-                    end = 30.dp,
-                    top =20.dp,
-                    bottom =20.dp
+                    horizontal = 28.dp,
+                    vertical = 24.dp
                 ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ){
+
           Text(
               text= "KAHAWA HUB",
               fontSize = 32.sp,
               fontWeight = FontWeight.Bold,
+              color=CoffeeBrown,
               textAlign = TextAlign.Center
           )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text= "Your Coffee. Your Market.",
                 fontSize = 17.sp,
+                color=CoffeeBrown,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier=Modifier.height(50.dp))
+            Spacer(modifier=Modifier.height(32.dp))
 
             Button(
                 onClick = onLoginClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape= RoundedCornerShape(14.dp),
+                colors= ButtonDefaults.buttonColors(
+                    containerColor=ForestGreen
+                )
             ){
             Text(
                 text = "Login",
@@ -312,11 +315,15 @@ fun KahawaHubWelcomePage(
 
             )
         }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             OutlinedButton(
                 onClick = onRegistrationClick,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape= RoundedCornerShape(14.dp),
+                colors=ButtonDefaults.outlinedButtonColors(
+                    contentColor=ForestGreen
+                )
             ) {
                 Text(
                     text="Register",
