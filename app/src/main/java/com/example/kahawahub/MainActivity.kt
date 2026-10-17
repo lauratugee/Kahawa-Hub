@@ -280,7 +280,7 @@ fun KahawaHubWelcomePage(
         verticalArrangement=Arrangement.Center
     ){
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(0.2f))
 
         Text(
             text= "KAHAWA HUB",
@@ -339,6 +339,7 @@ fun KahawaHubWelcomePage(
                     fontSize = 16.sp
                 )
             }
+        Spacer(modifier = Modifier.weight(1.3f))
 
 
         }
