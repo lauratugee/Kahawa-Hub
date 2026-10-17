@@ -268,7 +268,7 @@ fun KahawaHubWelcomePage(
             contentScale = ContentScale.Crop
         )
         Box(
-            modifier=Modifier.fillMaxSize().background(Color.Black.copy(alpha=0.30f))
+            modifier=Modifier.fillMaxSize().background(Color.Black.copy(alpha=0.45f))
         )
     }
     Column(
@@ -283,12 +283,13 @@ fun KahawaHubWelcomePage(
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-              text= "KAHAWA HUB",
-              fontSize = 34.sp,
-              fontWeight = FontWeight.Bold,
+            text= "KAHAWA HUB",
+            fontSize = 38.sp,
+            letterSpacing = 2.sp,
+            fontWeight = FontWeight.Bold,
             fontFamily=androidx.compose.ui.text.font.FontFamily.Serif,
-              color=CoffeeCream,
-              textAlign = TextAlign.Center
+            color=CoffeeCream,
+            textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(10.dp))
 
