@@ -51,6 +51,7 @@ import com.google.firebase.firestore.SetOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.foundation.BorderStroke
 
 
 private val CoffeeCream = Color(0xFFF7F3E9)
@@ -255,49 +256,50 @@ fun KahawaHubWelcomePage(
     onLoginClick: () -> Unit,
     onRegistrationClick: () -> Unit
 ){
-    Column(
-        modifier= Modifier
-            .fillMaxSize()
-            .background(CoffeeCream)
-            .safeDrawingPadding(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Box(
+        modifier=Modifier.fillMaxSize()
     ){
-
         Image(
             painter=painterResource(
                 id=R.drawable.welcomepagepic
             ),
-            contentDescription = "Coffee farm",
-            modifier = Modifier.fillMaxSize().weight(1f),
+            contentDescription = "Coffee farm background",
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
-
         )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(
-                    horizontal = 28.dp,
-                    vertical = 24.dp
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ){
+        Box(
+            modifier=Modifier.fillMaxSize().background(Color.Black.copy(alpha=0.30f))
+        )
+    }
+    Column(
+        modifier= Modifier
+            .fillMaxSize()
+            .safeDrawingPadding()
+            .padding(horizontal = 26.dp, vertical=24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement=Arrangement.Center
+    ){
 
-          Text(
+        Spacer(modifier = Modifier.weight(1f))
+
+        Text(
               text= "KAHAWA HUB",
-              fontSize = 32.sp,
+              fontSize = 34.sp,
               fontWeight = FontWeight.Bold,
-              color=CoffeeBrown,
+            fontFamily=androidx.compose.ui.text.font.FontFamily.Serif,
+              color=CoffeeCream,
               textAlign = TextAlign.Center
-          )
-            Spacer(modifier = Modifier.height(10.dp))
+        )
+        Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text= "Your Coffee. Your Market.",
-                fontSize = 17.sp,
-                color=CoffeeBrown,
-                textAlign = TextAlign.Center
+        Text(
+            text= "Your Coffee. Your Market.",
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
+            color=CoffeeCream,
+            textAlign = TextAlign.Center
+
             )
             Spacer(modifier=Modifier.height(32.dp))
 
@@ -311,7 +313,8 @@ fun KahawaHubWelcomePage(
             ){
             Text(
                 text = "Login",
-                fontSize = 16.sp
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
 
             )
         }
@@ -322,7 +325,12 @@ fun KahawaHubWelcomePage(
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape= RoundedCornerShape(14.dp),
                 colors=ButtonDefaults.outlinedButtonColors(
+                    containerColor = CoffeeCream.copy(alpha=0.9f),
                     contentColor=ForestGreen
+                ),
+                border=androidx.compose.foundation.BorderStroke(
+                    1.5.dp,
+                    ForestGreen
                 )
             ) {
                 Text(
@@ -335,7 +343,7 @@ fun KahawaHubWelcomePage(
         }
         }
 
-    }
+
 
 
 
