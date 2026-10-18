@@ -1,7 +1,7 @@
 package com.example.kahawahub
 
-import android.R
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,8 +34,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 
@@ -46,8 +44,9 @@ private val LoginGreen = Color(0xFF245640)
 @Composable
 fun LoginPage(
     onRegistrationClick: () -> Unit,
-    onLoginSuccess:(String) -> Unit
-    ){
+    onLoginSuccess: (String) -> Unit,
+
+){
 
     var email by remember{
         mutableStateOf("")
@@ -67,6 +66,7 @@ fun LoginPage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Spacer(modifier=Modifier.weight(1f))
         Text(
             text = "KAHAWA HUB",
             fontSize = 32.sp,
@@ -74,7 +74,7 @@ fun LoginPage(
             fontFamily = FontFamily.Serif,
             color = LoginBrown
         )
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
         Text(
             text = "Login to your account",
@@ -128,7 +128,7 @@ fun LoginPage(
             )
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -156,7 +156,8 @@ fun LoginPage(
                 fontSize = 12.sp
             )
         }
-    }
+
+        Spacer(modifier = Modifier.weight(1f))
 
         Button(
             onClick = {
@@ -242,4 +243,5 @@ fun LoginPage(
 
         }
     }
+}
 
