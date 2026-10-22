@@ -150,12 +150,14 @@ fun FarmerDashboard(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.pic6),
+                        painter = painterResource(id = R.drawable.pic5),
                         contentDescription = "Background Image",
                         modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(18.dp)),
-                        contentScale = ContentScale.Crop
+                            .fillMaxWidth()
+                            .height(240.dp)
+                            .clip(RoundedCornerShape(20.dp)),
+                        contentScale = ContentScale.FillWidth,
+                        alignment = Alignment.Center
                     )
                 }
                 Spacer(modifier = Modifier.height(20.dp))
