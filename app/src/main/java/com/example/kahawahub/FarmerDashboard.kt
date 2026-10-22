@@ -18,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +50,12 @@ import androidx.compose.ui.graphics.Color
 private val FarmerCream = Color(0xFFF7F3E9)
 private val FarmerBrown = Color(0xFF684832)
 private val FarmerGreen = Color(0xFF245640)
+
+private val PoppinsFamily = FontFamily(
+    Font(R.font.poppins_italic, FontWeight.Normal, FontStyle.Italic),
+    Font(R.font.poppins_medium, FontWeight.Medium),
+    Font(R.font.poppins_semibold, FontWeight.SemiBold)
+)
 
 @Composable
 fun FarmerDashboard(
@@ -124,20 +133,30 @@ fun FarmerDashboard(
             ) {
 
                 Text(
-                    text = "COFFEE MARKET",
+                    text = "KAHAWA HUB",
+                    fontFamily = PoppinsFamily,
                     fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     color = FarmerBrown
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "Welcome, $userName",
+                    fontFamily = PoppinsFamily,
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Medium,
                     color = FarmerBrown
                 )
                 Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text="Your Coffee. Your Market.",
+                    fontFamily = PoppinsFamily,
+                    fontSize = 14.sp,
+                    fontStyle = FontStyle.Italic,
+                    color=FarmerGreen
+                )
 
                 Box(
                     modifier = Modifier
@@ -165,7 +184,8 @@ fun FarmerDashboard(
                 Text(
                     text = "Latest Announcements",
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = PoppinsFamily,
+                    fontWeight = FontWeight.Medium,
                     color = FarmerBrown
                 )
                 Spacer(modifier = Modifier.height(12.dp))
