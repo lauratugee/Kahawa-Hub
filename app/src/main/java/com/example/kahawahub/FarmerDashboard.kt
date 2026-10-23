@@ -46,6 +46,9 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.mutableStateListOf
 
 private val FarmerCream = Color(0xFFF7F3E9)
 private val FarmerBrown = Color(0xFF684832)
@@ -57,6 +60,12 @@ private val PoppinsFamily = FontFamily(
     Font(R.font.poppins_semibold, FontWeight.SemiBold)
 )
 
+data class FarmerAnnouncement(
+    val title: String= "",
+    val message: String= "",
+    val date: String= ""
+)
+
 @Composable
 fun FarmerDashboard(
     onFindCooperativeClick: () -> Unit,
@@ -66,6 +75,13 @@ fun FarmerDashboard(
 ) {
     var userName by remember { mutableStateOf("Farmer") }
     var selectedTab by remember { mutableStateOf(0) }
+
+    val announcements = remember {
+        mutableStateListOf<FarmerAnnouncement>()
+    }
+    var announcementsLoading by remember {
+        mutableStateOf(true)
+    }
 
     LaunchedEffect(Unit) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -80,6 +96,55 @@ fun FarmerDashboard(
                 }
         }
     }
+    LaunchedEffect(Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        if (userId != null) {
+            val db = FirebaseFirestore.getInstance()
+
+            db.collection("farmers")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    val cooperativeId = document.getString("cooperative_id")
+
+                    if (cooperativeId.isNullOrBlank()) {
+                        db.collection("announcements")
+                            .whereEqualTo("cooperative_id", cooperativeId)
+                            .get()
+                            .addOnSuccessListener { documents ->
+
+                                announcements.clear()
+
+                                documents.documents.forEach { document ->
+                                    announcements.add(
+                                        FarmerAnnouncement(
+                                            title = document.getString("title") ?: "",
+                                            message = document.getString("message") ?: "",
+                                            date = document.getString("date_posted") ?: ""
+                                        )
+                                    )
+                                }
+                                announcementsLoading = false
+                            }
+                            .addOnFailureListener {
+                                announcementsLoading = false
+                            }
+                    } else {
+                        announcementsLoading = false
+                    }
+                }
+                .addOnFailureListener {
+                    announcementsLoading = false
+                }
+        } else {
+            announcementsLoading = false
+        }
+    }
+
+
+
+
     Scaffold(
         containerColor = FarmerCream,
         bottomBar = {
@@ -107,7 +172,12 @@ fun FarmerDashboard(
                         selectedTab = 2
                         onFindCooperativeClick()
                     },
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Cooperatives") },
+                    icon = {
+                        Icon(
+                            Icons.Filled.AccountCircle,
+                            contentDescription = "Cooperatives"
+                        )
+                    },
                     label = { Text("Cooperatives") }
                 )
                 NavigationBarItem(
@@ -151,11 +221,11 @@ fun FarmerDashboard(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text="Your Coffee. Your Market.",
+                    text = "Your Coffee. Your Market.",
                     fontFamily = PoppinsFamily,
                     fontSize = 14.sp,
                     fontStyle = FontStyle.Italic,
-                    color=FarmerGreen
+                    color = FarmerGreen
                 )
 
                 Box(
@@ -182,7 +252,7 @@ fun FarmerDashboard(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Latest Announcements",
+                    text = "Cooperative Announcements",
                     fontSize = 20.sp,
                     fontFamily = PoppinsFamily,
                     fontWeight = FontWeight.Medium,
@@ -190,30 +260,71 @@ fun FarmerDashboard(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Stay updated with news/information from your cooperative",
-                    fontSize = 16.sp,
-                    color = FarmerBrown
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                when {
+                    announcementsLoading -> {
+                        Text(
+                            text = "Loading announcements...",
+                            fontFamily = PoppinsFamily,
+                            fontSize = 14.sp,
+                            color = FarmerBrown
+                        )
+                    }
 
-                Button(
-                    onClick = onAnnouncementsClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = FarmerGreen)
-                ) {
-                    Icon(
-                        Icons.Filled.Notifications,
-                        contentDescription = null
-                    )
-                    Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                    Text(
-                        text = "View Announcements",
-                        fontSize = 16.sp
-                    )
+                    announcements.isEmpty() -> {
+                        Text(
+                            text = "No announcements available",
+                            fontFamily = PoppinsFamily,
+                            fontSize = 14.sp,
+                            color = FarmerBrown
+                        )
+                    }
+
+                    else -> {
+                        announcements.forEach { announcement ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = FarmerCream
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
+                                    Text(
+                                        text = announcement.title,
+                                        fontFamily = PoppinsFamily,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = FarmerGreen
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = announcement.message,
+                                        fontFamily = PoppinsFamily,
+                                        fontSize = 14.sp,
+                                        color = FarmerBrown
+                                    )
+                                    if (announcement.date.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = announcement.date,
+                                            fontFamily = PoppinsFamily,
+                                            fontSize = 12.sp,
+                                            color = FarmerBrown
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
+

@@ -47,6 +47,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.mutableIntStateOf
+
 
 
 private val CoffeeCream = Color(0xFFF7F3E9)
@@ -100,6 +102,9 @@ fun KahawaHubApp() {
     var profileReturnScreen by remember {
         mutableStateOf("farmerDashbpard")
 
+    }
+    var farmerSelectedTab by remember {
+        mutableIntStateOf(0)
     }
     when (currentScreen) {
 
