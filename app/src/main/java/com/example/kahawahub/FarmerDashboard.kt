@@ -68,13 +68,14 @@ data class FarmerAnnouncement(
 
 @Composable
 fun FarmerDashboard(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onFindCooperativeClick: () -> Unit,
     onViewCoffeePricesClick: () -> Unit,
     onProfileClick: () -> Unit,
     onAnnouncementsClick: () -> Unit
 ) {
     var userName by remember { mutableStateOf("Farmer") }
-    var selectedTab by remember { mutableStateOf(0) }
 
     val announcements = remember {
         mutableStateListOf<FarmerAnnouncement>()
@@ -153,15 +154,14 @@ fun FarmerDashboard(
             ) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
+                    onClick = { onTabSelected(0)  },
                     icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
                     label = { Text("Home") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = {
-                        selectedTab = 1
-                        onViewCoffeePricesClick()
+                        onTabSelected(1)
                     },
                     icon = { Icon(Icons.Filled.Favorite, contentDescription = "Prices") },
                     label = { Text("Prices") }
@@ -169,12 +169,11 @@ fun FarmerDashboard(
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = {
-                        selectedTab = 2
-                        onFindCooperativeClick()
+                        onTabSelected(2)
                     },
                     icon = {
                         Icon(
-                            Icons.Filled.AccountCircle,
+                            Icons.Filled.Notifications,
                             contentDescription = "Cooperatives"
                         )
                     },
@@ -183,8 +182,7 @@ fun FarmerDashboard(
                 NavigationBarItem(
                     selected = selectedTab == 3,
                     onClick = {
-                        selectedTab = 3
-                        onProfileClick()
+                        onTabSelected(3)
                     },
                     icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Profile") },
                     label = { Text("Profile") }
@@ -192,131 +190,133 @@ fun FarmerDashboard(
             }
         }
     ) { innerPadding ->
-        if (selectedTab == 0) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(FarmerCream)
-                    .padding(innerPadding)
-                    .padding(20.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-
-                Text(
-                    text = "KAHAWA HUB",
-                    fontFamily = PoppinsFamily,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = FarmerBrown
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Welcome, $userName",
-                    fontFamily = PoppinsFamily,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = FarmerBrown
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Text(
-                    text = "Your Coffee. Your Market.",
-                    fontFamily = PoppinsFamily,
-                    fontSize = 14.sp,
-                    fontStyle = FontStyle.Italic,
-                    color = FarmerGreen
-                )
-
-                Box(
+        when (selectedTab ) {
+            0 -> {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(170.dp)
-                        .background(
-                            FarmerGreen.copy(alpha = 0.12f),
-                            shape = RoundedCornerShape(18.dp)
-                        ),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .background(FarmerCream)
+                        .padding(innerPadding)
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.pic5),
-                        contentDescription = "Background Image",
+
+                    Text(
+                        text = "KAHAWA HUB",
+                        fontFamily = PoppinsFamily,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = FarmerBrown
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Welcome, $userName",
+                        fontFamily = PoppinsFamily,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = FarmerBrown
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "Your Coffee. Your Market.",
+                        fontFamily = PoppinsFamily,
+                        fontSize = 14.sp,
+                        fontStyle = FontStyle.Italic,
+                        color = FarmerGreen
+                    )
+
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(240.dp)
-                            .clip(RoundedCornerShape(20.dp)),
-                        contentScale = ContentScale.FillWidth,
-                        alignment = Alignment.Center
+                            .height(170.dp)
+                            .background(
+                                FarmerGreen.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(18.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.pic5),
+                            contentDescription = "Background Image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(240.dp)
+                                .clip(RoundedCornerShape(20.dp)),
+                            contentScale = ContentScale.FillWidth,
+                            alignment = Alignment.Center
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "Cooperative Announcements",
+                        fontSize = 20.sp,
+                        fontFamily = PoppinsFamily,
+                        fontWeight = FontWeight.Medium,
+                        color = FarmerBrown
                     )
-                }
-                Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "Cooperative Announcements",
-                    fontSize = 20.sp,
-                    fontFamily = PoppinsFamily,
-                    fontWeight = FontWeight.Medium,
-                    color = FarmerBrown
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                    when {
+                        announcementsLoading -> {
+                            Text(
+                                text = "Loading announcements...",
+                                fontFamily = PoppinsFamily,
+                                fontSize = 14.sp,
+                                color = FarmerBrown
+                            )
+                        }
 
-                when {
-                    announcementsLoading -> {
-                        Text(
-                            text = "Loading announcements...",
-                            fontFamily = PoppinsFamily,
-                            fontSize = 14.sp,
-                            color = FarmerBrown
-                        )
-                    }
+                        announcements.isEmpty() -> {
+                            Text(
+                                text = "No announcements available",
+                                fontFamily = PoppinsFamily,
+                                fontSize = 14.sp,
+                                color = FarmerBrown
+                            )
+                        }
 
-                    announcements.isEmpty() -> {
-                        Text(
-                            text = "No announcements available",
-                            fontFamily = PoppinsFamily,
-                            fontSize = 14.sp,
-                            color = FarmerBrown
-                        )
-                    }
-
-                    else -> {
-                        announcements.forEach { announcement ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 12.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = FarmerCream
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(16.dp)
+                        else -> {
+                            announcements.forEach { announcement ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 12.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = FarmerCream
+                                    )
                                 ) {
-                                    Text(
-                                        text = announcement.title,
-                                        fontFamily = PoppinsFamily,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = FarmerGreen
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Text(
-                                        text = announcement.message,
-                                        fontFamily = PoppinsFamily,
-                                        fontSize = 14.sp,
-                                        color = FarmerBrown
-                                    )
-                                    if (announcement.date.isNotEmpty()) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = announcement.title,
+                                            fontFamily = PoppinsFamily,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = FarmerGreen
+                                        )
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Text(
-                                            text = announcement.date,
+                                            text = announcement.message,
                                             fontFamily = PoppinsFamily,
-                                            fontSize = 12.sp,
+                                            fontSize = 14.sp,
                                             color = FarmerBrown
                                         )
+                                        if (announcement.date.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+
+                                            Text(
+                                                text = announcement.date,
+                                                fontFamily = PoppinsFamily,
+                                                fontSize = 12.sp,
+                                                color = FarmerBrown
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -324,7 +324,50 @@ fun FarmerDashboard(
                     }
                 }
             }
-        }
+            1 -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    CoffeeMarketPricesPage(
+                        onBackClick = {
+                            onTabSelected(0)
+                        }
+                    )
+                }
+            }
+            2 -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    FindCooperativePage(
+                        onBackClick = {
+                            onTabSelected(0)
+                        }
+                    )
+                }
+            }
+            3 -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    ProfilePage(
+                        onBackClick = {
+                            onTabSelected(0)
+                        },
+                        onLogoutClick = {
+                            FirebaseAuth.getInstance().signOut()
+                            onTabSelected
+                        }
+                    )
+                }
+                }
+            }
     }
 }
 

@@ -1,13 +1,29 @@
 package com.example.kahawahub
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.DisposableEffect
 import com.google.firebase.firestore.FirebaseFirestore
+
+
+private val MarketCream = Color(0xFFF7F3E9)
+private val MarketBrown = Color(0xFF684832)
+private val MarketGreen = Color(0xFF245640)
+private val MarketMuted = Color(0xFF81766C)
+private val MarketRed= Color(0xFFB4483E)
+private val MarketLightGreen = Color(0xFFE4EFE5)
+private val MarketLightRed = Color(0xFFF8E8E5)
 
 data class MarketPrice(
     val coffeeType : String = "",
@@ -28,42 +44,40 @@ fun CoffeeMarketPricesPage(
     var isLoading by remember {
         mutableStateOf(true)
     }
-    LaunchedEffect(Unit) {
+   DisposableEffect(Unit) {
+       val listener = FirebaseFirestore.getInstance()
+           .collection("coffee_prices")
+           .addSnapshotListener { documents, error ->
 
-        FirebaseFirestore.getInstance()
-            .collection("coffee_prices")
-            .get()
-            .addOnSuccessListener { documents ->
+               if (error !=null){
+                   isLoading=false
+                   return@addSnapshotListener
+               }
 
-                prices=documents.documents.map { document ->
-
-                    MarketPrice(
-                        coffeeType = document.getString("coffee_type") ?: "",
-                        price=document.getLong("price") ?: 0L,
-                        previousPrice = document.getLong("previous_price") ?: 0L,
-                        currency=document.getString("currency") ?: "KES",
-                        priceUnit=document.getString("price_unit") ?: "per kg",
-                        cooperativeName =
-                            document.getString("cooperative_name") ?: ""
-                    )
-                }
-                isLoading = false
-            }
-            .addOnFailureListener {
-                isLoading = false
-            }
-    }
+               if (documents != null) {
+                   prices=documents.documents.map { document ->
+                       MarketPrice(
+                           coffeeType = document.getString("coffee_type") ?: "",
+                           price = document.getLong("price") ?: 0L,
+                           previousPrice = document.getLong("previous_price") ?: 0L,
+                           currency = document.getString("currency") ?: "KES",
+                           priceUnit = document.getString("price_unit") ?: "per kg",
+                           cooperativeName = document.getString("cooperative_name") ?: ""
+                       )
+                   }
+                   isLoading=false
+                   }
+               }
+       onDispose {
+           listener.remove()
+               }
+   }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
     ){
-        Button(
 
-                onClick = { onBackClick()}
-            ) {
-            Text("Back")
-        }
         Text(
             text="Coffee Market Prices",
             style= MaterialTheme.typography.headlineMedium
@@ -86,6 +100,9 @@ fun CoffeeMarketPricesPage(
         } else {
 
             LazyColumn(
+                modifier= Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(prices){ marketPrice ->

@@ -146,18 +146,21 @@ fun KahawaHubApp() {
         }
         "farmerDashboard" ->{
             FarmerDashboard(
+                selectedTab = farmerSelectedTab,
+                onTabSelected = { tab ->
+                    farmerSelectedTab = tab
+                },
                 onFindCooperativeClick = {
-                    currentScreen="findCooperative"
+                    farmerSelectedTab=2
                 },
                 onViewCoffeePricesClick = {
-                    currentScreen="coffeeMarketPrices"
+                    farmerSelectedTab=1
                 },
                 onProfileClick = {
-                    profileReturnScreen="farmerDashboard"
-                    currentScreen="myProfile"
+                    farmerSelectedTab=3
                 },
                 onAnnouncementsClick = {
-                    currentScreen="announcements"
+                    farmerSelectedTab=0
                 }
             )
         }

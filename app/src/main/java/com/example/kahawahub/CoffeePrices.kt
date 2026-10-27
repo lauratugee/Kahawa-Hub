@@ -17,16 +17,15 @@ fun CoffeePrices(onBackClick: () -> Unit) {
 
     var coffeeType by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp)
-    ) {
-        Button(
-            onClick= { onBackClick()}
-        ){
-            Text("<-Back ")
+    ){
+        Button(onClick = onBackClick ) {
+            Text("Back")
         }
         Spacer(modifier=Modifier.height(12.dp))
         Text(
@@ -43,26 +42,34 @@ fun CoffeePrices(onBackClick: () -> Unit) {
             label = {
                 Text("Coffee type")
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine=true,
+            enabled=!isSaving
         )
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedTextField(
             value = price,
-            onValueChange = {
-                price = it
+            onValueChange = { input ->
+                if(input.isEmpty() || input.all{ it.isDigit()}) {
+                    price=input
+                }
             },
             label = {
                 Text("Current Price(KES per kg")
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            enabled=!isSaving
         )
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
             onClick = {
+                val cleanedType=coffeeType.trim()
+                val newPrice=price.toLongOrNull()
 
-                if (coffeeType.isEmpty() || price.isEmpty()) {
+                if (cleanedType.isEmpty() || newPrice==null || newPrice<=0L) {
 
                     Toast.makeText(
                         context,
@@ -80,23 +87,23 @@ fun CoffeePrices(onBackClick: () -> Unit) {
                             Toast.LENGTH_LONG
                         ).show()
                     } else {
+                        isSaving=true
 
                         db.collection("coffee_prices")
                             .whereEqualTo("cooperative_id", userId)
-                            .whereEqualTo("coffee_type", coffeeType)
+                            .whereEqualTo("coffee_type", coffeeType.trim())
                             .get()
                             .addOnSuccessListener { documents ->
 
-                                val existingDocument =
-                                    documents.documents.firstOrNull()
+                                val existingDocuments = documents.documents
+                                val existingDocument=existingDocuments.firstOrNull()
 
-                                val previousPrice =
-                                    documents.documents.firstOrNull()
+                                val previousPrice = existingDocument
                                         ?.getLong("price") ?: 0L
 
                                 val priceData = hashMapOf<String, Any>()
                                 priceData["cooperative_id"] = userId
-                                priceData["coffee_type"] = coffeeType
+                                priceData["coffee_type"] = coffeeType.trim()
                                 priceData["price"] = price.toLong()
                                 priceData["previous_price"] = previousPrice
                                 priceData["currency"] = "KES"
@@ -105,51 +112,75 @@ fun CoffeePrices(onBackClick: () -> Unit) {
                                 priceData["source"] = "Cooperative"
 
 
-                                if (existingDocument != null) {
-
+                                if (existingDocument !=null) {
                                     existingDocument.reference
                                         .update(priceData)
                                         .addOnSuccessListener {
 
-                                            Toast.makeText(
-                                                context,
-                                                "Coffee price updated successfully",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            val batch = db.batch()
 
-                                            coffeeType = ""
-                                            price = ""
+                                            existingDocuments.drop(1).forEach { duplicate ->
+                                                batch.delete(duplicate.reference)
+                                            }
+                                            if (existingDocuments.size > 1) {
+                                                batch.commit()
+                                                    .addOnSuccessListener {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Coffee price updated successfully and duplicate records removed",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                        coffeeType = ""
+                                                        price = ""
+                                                        isSaving = false
+                                                    }
+                                                    .addOnFailureListener { exception ->
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Database error: ${exception.message}",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                        isSaving = false
+                                                    }
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Coffee price updated successfully",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                coffeeType = ""
+                                                price = ""
+                                                isSaving = false
+                                            }
                                         }
                                         .addOnFailureListener { exception ->
-
                                             Toast.makeText(
                                                 context,
                                                 "Database error: ${exception.message}",
                                                 Toast.LENGTH_LONG
                                             ).show()
+                                            isSaving=false
                                         }
-
                                 } else {
                                     db.collection("coffee_prices")
                                         .add(priceData)
                                         .addOnSuccessListener {
-
                                             Toast.makeText(
                                                 context,
                                                 "Coffee price added successfully",
                                                 Toast.LENGTH_SHORT
                                             ).show()
-
                                             coffeeType = ""
                                             price = ""
+                                            isSaving = false
                                         }
                                         .addOnFailureListener { exception ->
-
                                             Toast.makeText(
                                                 context,
                                                 "Database error: ${exception.message}",
                                                 Toast.LENGTH_LONG
                                             ).show()
+                                            isSaving = false
                                         }
                                 }
                             }
@@ -160,13 +191,22 @@ fun CoffeePrices(onBackClick: () -> Unit) {
                                     "Could not check previous price  ${exception.message}",
                                     Toast.LENGTH_LONG
                                 ).show()
+                                isSaving = false
                             }
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isSaving
         ) {
-            Text("Update Price")
+            if(isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else{
+                Text("Update Price")
+            }
         }
     }
 }
