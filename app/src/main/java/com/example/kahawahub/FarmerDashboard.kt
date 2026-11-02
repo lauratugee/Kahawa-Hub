@@ -73,7 +73,8 @@ fun FarmerDashboard(
     onFindCooperativeClick: () -> Unit,
     onViewCoffeePricesClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onAnnouncementsClick: () -> Unit
+    onAnnouncementsClick: () -> Unit,
+    onLogoutClick: () -> Unit
 ) {
     var userName by remember { mutableStateOf("Farmer") }
 

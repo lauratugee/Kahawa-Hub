@@ -161,6 +161,11 @@ fun KahawaHubApp() {
                 },
                 onAnnouncementsClick = {
                     farmerSelectedTab=0
+                },
+                onLogoutClick={
+                    FirebaseAuth.getInstance().signOut()
+                    farmerSelectedTab=0
+                    currentScreen="login"
                 }
             )
         }
@@ -201,7 +206,7 @@ fun KahawaHubApp() {
                 },
                 onLogoutClick = {
                     FirebaseAuth.getInstance().signOut()
-                    currentScreen="welcome"
+                    currentScreen="login"
                 }
             )
         }

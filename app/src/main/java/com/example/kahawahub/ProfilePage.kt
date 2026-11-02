@@ -56,6 +56,7 @@ fun ProfilePage(
     var isEditing by remember { mutableStateOf(false) }
     var showLeaveConfirmation by remember { mutableStateOf(false) }
     var showPasswordInfo by remember { mutableStateOf(false) }
+    var showLogoutConfirmation by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(currentUser?.uid) {
@@ -185,6 +186,41 @@ fun ProfilePage(
                 }
             },
             containerColor = ProfileCream
+        )
+    }
+    if (showLogoutConfirmation){
+        AlertDialog(
+            onDismissRequest = {
+                showLogoutConfirmation=false
+            },
+            title = {
+                Text("Logout")
+            },
+            text = {
+                Text("Are you sure you want to logout?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutConfirmation=false
+                        onLogoutClick()
+                    }
+                ) {
+                    Text("Logout",
+                        color = ProfileRed)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutConfirmation=false
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            },
+            containerColor = ProfileCream
+
         )
     }
 
@@ -450,30 +486,24 @@ fun ProfilePage(
                     onClick = { showPasswordInfo = true }
                 )
             }
-            Card(
+            Button(
+                onClick={
+                    showLogoutConfirmation=true
+                },
+
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onLogoutClick() },
+                    .height(52.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 1.dp
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ProfileRed
                 )
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    Text(
-                        text = "Logout",
-                        color = ProfileRed,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.weight(1f)
+            ){
+                Text(
+                    text = "Logout",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
 
                     )
                 }
@@ -481,7 +511,7 @@ fun ProfilePage(
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
-}
+
 
 @Composable
 private fun ProfileInfoRow(
@@ -528,8 +558,8 @@ private fun ProfileActionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick=onClick)
-            .padding(vertical=4.dp),
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ){
