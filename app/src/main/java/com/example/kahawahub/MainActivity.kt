@@ -40,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import android.util.Log
+import android.widget.Toast
 import com.google.firebase.messaging.FirebaseMessaging
 import com.example.kahawahub.ui.theme.KahawaHubTheme
 import com.google.firebase.auth.FirebaseAuth
@@ -127,10 +128,11 @@ fun KahawaHubApp() {
                 onLoginSuccess = { userType ->
                     saveFcmForCurrentUser()
 
-                    currentScreen = when (userType) {
-                        "Farmer" -> "farmerDashboard"
-                        "Cooperative Society" -> "cooperativeDashboard"
-                        else -> "welcome"
+                    val normalizedType = userType.trim()
+                    currentScreen = when {
+                        normalizedType.equals("Cooperative Society", ignoreCase = true) ||
+                        normalizedType.equals("Cooperative", ignoreCase = true) -> "cooperativeDashboard"
+                        else -> "farmerDashboard"
                     }
                 }
             )
@@ -165,7 +167,7 @@ fun KahawaHubApp() {
                 onLogoutClick={
                     FirebaseAuth.getInstance().signOut()
                     farmerSelectedTab=0
-                    currentScreen="login"
+                    currentScreen="welcome"
                 }
             )
         }

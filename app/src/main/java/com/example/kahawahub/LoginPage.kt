@@ -48,13 +48,16 @@ fun LoginPage(
 
 ){
 
-    var email by remember{
+    var email by remember {
         mutableStateOf("")
     }
     var password by remember {
         mutableStateOf("")
     }
     var rememberMe by remember {
+        mutableStateOf(false)
+    }
+    var isLoading by remember {
         mutableStateOf(false)
     }
     val context = LocalContext.current
@@ -160,16 +163,20 @@ fun LoginPage(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
+            enabled = !isLoading,
             onClick = {
-                if(email.isBlank() || password.isBlank()){
+                val trimmedEmail = email.trim()
+                val trimmedPassword = password.trim()
+                if (trimmedEmail.isBlank() || trimmedPassword.isBlank()) {
                     Toast.makeText(
                         context,
                         "Please enter your email and password",
                         Toast.LENGTH_SHORT
                     ).show()
                 } else {
+                    isLoading = true
                     FirebaseAuth.getInstance()
-                        .signInWithEmailAndPassword(email, password)
+                        .signInWithEmailAndPassword(trimmedEmail, trimmedPassword)
                         .addOnSuccessListener {
                             val userId = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -179,42 +186,88 @@ fun LoginPage(
                                     .document(userId)
                                     .get()
                                     .addOnSuccessListener { document ->
+                                        val userType = if (document.exists()) {
+                                            document.getString("user_type")
+                                                ?: document.getString("userType")
+                                                ?: ""
+                                        } else {
+                                            ""
+                                        }
 
-                                        val userType = document.getString("user_type") ?: ""
-
+                                        if (userType.isNotBlank()) {
+                                            isLoading = false
+                                            Toast.makeText(
+                                                context,
+                                                "Login successful",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            onLoginSuccess(userType)
+                                        } else {
+                                            FirebaseFirestore.getInstance()
+                                                .collection("cooperatives")
+                                                .document(userId)
+                                                .get()
+                                                .addOnSuccessListener { coopDoc ->
+                                                    isLoading = false
+                                                    val fallbackType = if (coopDoc.exists()) "Cooperative Society" else "Farmer"
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Login successful",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    onLoginSuccess(fallbackType)
+                                                }
+                                                .addOnFailureListener {
+                                                    isLoading = false
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Login successful",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    onLoginSuccess("Farmer")
+                                                }
+                                        }
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        isLoading = false
+                                        android.util.Log.e("LoginPage", "Firestore error: ${exception.message}", exception)
                                         Toast.makeText(
                                             context,
-                                            "Login successful",
-                                            Toast.LENGTH_SHORT
+                                            "Login successful! Note: Check Firestore security rules.",
+                                            Toast.LENGTH_LONG
                                         ).show()
-
-                                        onLoginSuccess(userType)
+                                        onLoginSuccess("Farmer")
                                     }
+                            } else {
+                                isLoading = false
+                                Toast.makeText(
+                                    context,
+                                    "Authentication failed: User ID is null",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
-
                         .addOnFailureListener { exception ->
+                            isLoading = false
                             Toast.makeText(
                                 context,
-                                "Login failed:(${exception.javaClass.simpleName}): ${exception.message}",
+                                "Login failed: (${exception.javaClass.simpleName}): ${exception.message}",
                                 Toast.LENGTH_LONG
                             ).show()
                         }
                 }
-
             },
             modifier = Modifier.fillMaxWidth().height(54.dp),
-            shape= RoundedCornerShape(14.dp),
-            colors= ButtonDefaults.buttonColors(
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
                 containerColor = LoginGreen
             )
         ) {
             Text(
-                text="Login",
+                text = if (isLoading) "Logging in..." else "Login",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
-
         }
         Spacer(modifier = Modifier.height(16.dp))
 

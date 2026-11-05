@@ -86,7 +86,8 @@ fun FarmerDashboard(
     }
 
     LaunchedEffect(Unit) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val userId = currentUser?.uid
 
         if (userId != null) {
             FirebaseFirestore.getInstance()
@@ -94,7 +95,17 @@ fun FarmerDashboard(
                 .document(userId)
                 .get()
                 .addOnSuccessListener { document ->
-                    userName = document.getString("name") ?: "Farmer"
+                    userName = document.getString("name")
+                        ?: document.getString("full_name")
+                        ?: document.getString("fullName")
+                        ?: currentUser.displayName
+                        ?: currentUser.email?.substringBefore("@")
+                        ?: "Farmer"
+                }
+                .addOnFailureListener {
+                    userName = currentUser.displayName
+                        ?: currentUser.email?.substringBefore("@")
+                        ?: "Farmer"
                 }
         }
     }
@@ -361,10 +372,7 @@ fun FarmerDashboard(
                         onBackClick = {
                             onTabSelected(0)
                         },
-                        onLogoutClick = {
-                            FirebaseAuth.getInstance().signOut()
-                            onTabSelected
-                        }
+                        onLogoutClick = onLogoutClick
                     )
                 }
                 }

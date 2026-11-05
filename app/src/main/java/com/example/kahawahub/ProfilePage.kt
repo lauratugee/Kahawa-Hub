@@ -26,6 +26,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.auth.EmailAuthProvider
 
 private val ProfileCream = Color(0xFFF7F3E9)
 private val ProfileBrown = Color(0xFF684832)
@@ -56,7 +57,9 @@ fun ProfilePage(
     var isEditing by remember { mutableStateOf(false) }
     var showLeaveConfirmation by remember { mutableStateOf(false) }
     var showPasswordInfo by remember { mutableStateOf(false) }
+    var currentPassword by remember { mutableStateOf("") }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
+    var showEmailPasswordDialog by remember { mutableStateOf(false) }
 
 
     LaunchedEffect(currentUser?.uid) {
@@ -183,6 +186,123 @@ fun ProfilePage(
                     }
                 ) {
                     Text("OK")
+                }
+            },
+            containerColor = ProfileCream
+        )
+    }
+    if (showEmailPasswordDialog){
+        AlertDialog(
+            onDismissRequest = {
+                showEmailPasswordDialog=false
+                currentPassword=""
+            },
+            title = {
+                Text("Enter your email and password")
+            },
+            text = {
+                Column (
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ){
+                    Text(
+                        "Please enter your current password to change your email address"
+                    )
+                    OutlinedTextField(
+                        value=currentPassword,
+                        onValueChange = {currentPassword=it},
+                        label = { Text(" Current password") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        visualTransformation =
+                            androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled=currentPassword.isNotBlank() && !isSaving,
+                    onClick = {
+                        val user=currentUser
+
+                        if (user?.email == null){
+                            Toast.makeText(
+                                context,
+                                "Please login again",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }else{
+                            isSaving=true
+
+                            val credential = EmailAuthProvider.getCredential(
+                                user.email!!,
+                                currentPassword
+                            )
+                            user.reauthenticate(credential)
+                                .addOnSuccessListener {
+                                    user.verifyBeforeUpdateEmail(email.trim())
+                                        .addOnSuccessListener {
+                                            db.collection("users")
+                                                .document(user.uid)
+                                                .set(
+                                                    mapOf(
+                                                        "name" to fullName.trim(),
+                                                        "phone_number" to phoneNumber.trim(),
+                                                    ),
+                                                    SetOptions.merge()
+                                                )
+                                                .addOnSuccessListener {
+                                                    isSaving = false
+                                                    isEditing = false
+                                                    showEmailPasswordDialog = false
+                                                    currentPassword = ""
+
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Verification email sent",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+                                                .addOnFailureListener {
+                                                    isSaving = false
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Could not save changes.Try again",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+                                        }
+                                        .addOnFailureListener { exception ->
+                                            isSaving = false
+                                            Toast.makeText(
+                                                context,
+                                                exception.localizedMessage ?:
+                                                "Could not send verification email.Try again",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        }
+                                }
+                                .addOnFailureListener {
+                                    isSaving = false
+                                    Toast.makeText(
+                                        context,
+                                        "Incorrect password.Try again",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                        }
+                    }
+                ){
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEmailPasswordDialog=false
+                        currentPassword=""
+                    }
+                ){
+                    Text("Cancel")
                 }
             },
             containerColor = ProfileCream
@@ -320,6 +440,14 @@ fun ProfilePage(
                         shape = RoundedCornerShape(12.dp)
                     )
                     OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email address") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    OutlinedTextField(
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
                         label = { Text("Phone Number") },
@@ -327,6 +455,7 @@ fun ProfilePage(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
+
                 } else {
                     ProfileInfoRow(
                         emoji = "👤",
