@@ -275,7 +275,7 @@ fun KahawaHubWelcomePage(
     ){
         Image(
             painter=painterResource(
-                id=R.drawable.welcomepagepic
+                id=R.drawable.pic1
             ),
             contentDescription = "Coffee farm background",
             modifier = Modifier.fillMaxSize(),

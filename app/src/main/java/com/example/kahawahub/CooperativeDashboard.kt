@@ -1,7 +1,6 @@
 package com.example.kahawahub
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -86,7 +85,7 @@ fun  CooperativeDashboard(
                     "Prices",
                     "Profile"
                 )
-                val symbols = listOf("🏠,🧑🏽‍,📃,💰,👤")
+                val symbols = listOf("🏠","👥","📃","💰","👤")
 
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
@@ -275,18 +274,7 @@ fun  CooperativeDashboard(
                     )
                 }
 
-                1 -> {
-                    Text(
-                        text = "Members",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CoffeeBrown
-                    )
-                    Text(
-                        text = "Registered farmers will appear here",
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
-                }
+
 
                 2 -> {
                     Text(
