@@ -13,6 +13,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -29,10 +35,11 @@ fun  CooperativeDashboard(
 ) {
     val context = LocalContext.current
 
-    val userName = remember { mutableStateOf("Cooperative Society") }
-    val announcementTitle = remember { mutableStateOf("") }
-    val announcementMessage = remember { mutableStateOf("") }
+    var userName by remember { mutableStateOf("Cooperative Society") }
+    var announcementTitle by remember { mutableStateOf("") }
+    var announcementMessage by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
@@ -51,22 +58,21 @@ fun  CooperativeDashboard(
                         ?: currentUser.email?.substringBefore("@")
                         ?: ""
                     if (name.isNotBlank()) {
-                        userName.value = name
+                        userName = name
                     } else {
                         db.collection("cooperatives")
                             .document(userId)
                             .get()
                             .addOnSuccessListener { coopDoc ->
-                                userName.value = coopDoc.getString("name")
+                                userName= coopDoc.getString("name")
                                     ?: currentUser.displayName
-                                    ?: currentUser.email?.substringBefore("@")
-                                    ?: "Cooperative Society"
+                                            ?: currentUser.email?.substringBefore("@")
+                                            ?: "Cooperative Society"
                             }
                     }
                 }
         }
     }
-
     Scaffold(
         containerColor = CoffeeCream,
         bottomBar = {
@@ -80,12 +86,14 @@ fun  CooperativeDashboard(
                     "Prices",
                     "Profile"
                 )
-                val symbols = listOf("🏠", "🧑🏽‍🌾", "📃", "💰", "👤")
+                val symbols = listOf("🏠,🧑🏽‍,📃,💰,👤")
 
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
                         selected = selectedTab == index,
-                        onClick = { onTabSelected(index) },
+                        onClick = { onTabSelected(index)
+                        },
+
                         icon = {
                             Text(
                                 text = symbols[index],
@@ -111,23 +119,159 @@ fun  CooperativeDashboard(
         }
     ) { innerPadding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
                 .padding(innerPadding)
                 .padding(20.dp)
         ) {
             when (selectedTab) {
                 0 -> {
+                    Column(
+                        modifier=Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ){
+                        Box(
+                            modifier= Modifier
+                                .fillMaxWidth()
+                                .height(190.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.pic4),
+                                contentDescription = "cooperative society header",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            Surface(
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .offset(x = 18.dp, y = 35.dp),
+                                shape = CircleShape,
+                                color = Color.White,
+                                shadowElevation = 5.dp
+                            ) {
+                                Box(
+                                    modifier = Modifier.size(70.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("☕", fontSize = 34.sp)
+                                }
+                            }
+                        }
+                        Spacer(modifier=Modifier.height(48.dp))
+
+                        Text(
+                            text = "Welcome, ${userName}",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color=CoffeeBrown
+                        )
+                        Spacer(modifier=Modifier.height(6.dp))
+
+                        Text(
+                            text="Cooperative location",
+                            fontSize = 14.sp,
+                            color=CoffeeGreen
+                        )
+                        Spacer(modifier=Modifier.height(24.dp))
+
+                        Text(
+                            text="About Us",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color=CoffeeBrown
+                        )
+                        Spacer(modifier=Modifier.height(8.dp))
+
+                        Text(
+                            text="Description of the cooperative",
+                            fontSize = 14.sp,
+                            color=Color.DarkGray,
+                            lineHeight = 22.sp
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 18.dp),
+                            color= Color.Gray
+                        )
+                        Text(
+                            text="Our Services",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color=CoffeeBrown
+                        )
+                        Spacer(modifier=Modifier.height(8.dp))
+
+                        Text(
+                            text="Services offered will be displayed here",
+                            fontSize = 14.sp,
+                            color=Color.DarkGray,
+                            lineHeight = 22.sp
+                        )
+                        HorizontalDivider(
+                            modifier=Modifier.padding(vertical=18.dp),
+                            color= Color.LightGray
+                        )
+                        Text(
+                            text="Membership Information",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color=CoffeeBrown
+                        )
+                        Spacer(modifier=Modifier.height(8.dp))
+
+                        Text(
+                            text="Information about the cooperative members will be displayed here",
+                            fontSize = 14.sp,
+                            color=Color.DarkGray,
+                            lineHeight = 22.sp
+                        )
+                        HorizontalDivider(
+                            modifier=Modifier.padding(vertical=18.dp),
+                            color= Color.LightGray
+                        )
+                        Text(
+                            text="Contact Details",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            color=CoffeeBrown
+                        )
+                        Spacer(modifier=Modifier.height(8.dp))
+
+                        Text(
+                            text="Contact information for the cooperative will be displayed here",
+                            fontSize = 14.sp,
+                            color=Color.DarkGray,
+                            lineHeight = 22.sp
+                        )
+                    }
+
+                }
+
+                1 -> {
                     Text(
-                        text = "Welcome, ${userName.value}",
+                        text = "Members",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = CoffeeBrown
+                        color = CoffeeCream
+
                     )
                     Spacer(modifier = Modifier.height(12.dp))
+
                     Text(
-                        text = "Your cooperative dashboard overview",
-                        color = CoffeeBrown.copy(alpha = 0.8f)
+                        text = "Your cooperative at a glance",
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Welcome to your cooperative space",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = CoffeeGreen
+                    )
+                    Text(
+                        text = "Your cooperative information and services will appear here",
+                        modifier = Modifier.padding(top = 8.dp),
+                        color = Color.DarkGray
                     )
                 }
 
@@ -138,10 +282,9 @@ fun  CooperativeDashboard(
                         fontWeight = FontWeight.Bold,
                         color = CoffeeBrown
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Registered farmers will appear here",
-                        color = CoffeeBrown.copy(alpha = 0.8f)
+                        modifier = Modifier.padding(top = 12.dp)
                     )
                 }
 
@@ -155,22 +298,22 @@ fun  CooperativeDashboard(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = announcementTitle.value,
-                        onValueChange = { announcementTitle.value = it },
+                        value = announcementTitle,
+                        onValueChange = { announcementTitle = it },
                         label = { Text("Announcement Title") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
+                        shape=RoundedCornerShape(12.dp)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedTextField(
-                        value = announcementMessage.value,
-                        onValueChange = { announcementMessage.value = it },
+                        value = announcementMessage,
+                        onValueChange = { announcementMessage = it },
                         label = { Text("Announcement Message") },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 4,
-                        shape = RoundedCornerShape(12.dp)
+                        shape=RoundedCornerShape(12.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -179,12 +322,12 @@ fun  CooperativeDashboard(
                             val userId = FirebaseAuth.getInstance().currentUser?.uid
 
                             if (userId != null &&
-                                announcementTitle.value.isNotBlank() &&
-                                announcementMessage.value.isNotBlank()
+                                announcementTitle.isNotBlank() &&
+                                announcementMessage.isNotBlank()
                             ) {
                                 val announcement = hashMapOf(
-                                    "title" to announcementTitle.value,
-                                    "message" to announcementMessage.value,
+                                    "title" to announcementTitle,
+                                    "message" to announcementMessage,
                                     "posted_by" to userId,
                                     "cooperative_id" to userId,
                                     "date_posted" to System.currentTimeMillis(),
@@ -199,30 +342,31 @@ fun  CooperativeDashboard(
                                             "Announcement posted successfully",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        announcementTitle.value = ""
-                                        announcementMessage.value = ""
+
+                                        announcementTitle = ""
+                                        announcementMessage = ""
                                     }
-                                    .addOnFailureListener { exception ->
+                                    .addOnFailureListener {
                                         Toast.makeText(
                                             context,
-                                            "Failed to post announcement: ${exception.message}",
+                                            "Failed to post announcement: &{it.message}",
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
                             } else {
                                 Toast.makeText(
                                     context,
-                                    "Please fill in all fields or log in",
+                                    "Please fill in all fields",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
-                        },
+                    },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape=RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = CoffeeGreen
                         )
-                    ) {
+                    ){
                         Text("Post Announcement")
                     }
                 }
@@ -234,10 +378,10 @@ fun  CooperativeDashboard(
                         fontWeight = FontWeight.Bold,
                         color = CoffeeBrown
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Manage coffee cherry prices here",
-                        color = CoffeeBrown.copy(alpha = 0.8f)
+                        modifier = Modifier.padding(top = 12.dp),
+                        color=Color.DarkGray
                     )
                 }
 
@@ -248,17 +392,20 @@ fun  CooperativeDashboard(
                         fontWeight = FontWeight.Bold,
                         color = CoffeeBrown
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier=Modifier.height(12.dp))
+
+
                     Text(
-                        text = userName.value,
-                        fontSize = 16.sp,
-                        color = CoffeeBrown.copy(alpha = 0.8f)
+                        text = userName,
+                        modifier = Modifier.padding(top = 12.dp),
+                        color=Color.DarkGray
                     )
+
                     Spacer(modifier = Modifier.height(24.dp))
+
                     OutlinedButton(
                         onClick = { showLogoutDialog = true },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
                         )
@@ -278,13 +425,11 @@ fun  CooperativeDashboard(
                             },
                             confirmButton = {
                                 TextButton(
-                                    onClick = {
-                                        showLogoutDialog = false
-                                        onLogoutClick()
-                                    }
+                                    onClick = onLogoutClick
                                 ) {
-                                    Text("Logout", color = MaterialTheme.colorScheme.error)
+                                    Text("Logout")
                                 }
+
                             },
                             dismissButton = {
                                 TextButton(
@@ -292,8 +437,7 @@ fun  CooperativeDashboard(
                                 ) {
                                     Text("Cancel")
                                 }
-                            },
-                            containerColor = CoffeeCream
+                            }
                         )
                     }
                 }
@@ -301,3 +445,7 @@ fun  CooperativeDashboard(
         }
     }
 }
+
+
+
+
