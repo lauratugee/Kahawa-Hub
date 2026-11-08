@@ -19,6 +19,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.text.input.TextFieldValue
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -249,16 +254,29 @@ fun CooperativeDashboard(
                 }
 
                 1 -> {
-                    Text(
-                        text = "Members",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CoffeeBrown
-                    )
-                    Text(
-                        text = "Registered farmers will appear here",
-                        modifier = Modifier.padding(top = 12.dp)
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Text(
+                            text = "Members",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = CoffeeBrown
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            label = { Text("Search for members") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text("Memers will appear here")
+                    }
                 }
 
                 2 -> {
