@@ -38,19 +38,45 @@ fun  CooperativeDashboard(
     val context=LocalContext.current
 
     LaunchedEffect(Unit){
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-
-
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val userId = currentUser?.uid
 
         if(userId != null){
-            FirebaseFirestore.getInstance()
-                .collection("users")
+            val db = FirebaseFirestore.getInstance()
+            db.collection("users")
                 .document(userId)
                 .get()
                 .addOnSuccessListener{ document ->
-                    userName.value=
-                        document.getString("name") ?: "Cooperative Society"
-
+                    val name = document.getString("name")
+                        ?: document.getString("full_name")
+                        ?: document.getString("fullName")
+                        ?: currentUser.displayName
+                        ?: currentUser.email?.substringBefore("@")
+                        ?: ""
+                    if (name.isNotBlank()) {
+                        userName.value = name
+                    } else {
+                        db.collection("cooperatives")
+                            .document(userId)
+                            .get()
+                            .addOnSuccessListener { coopDoc ->
+                                userName.value = coopDoc.getString("name")
+                                    ?: currentUser.displayName
+                                    ?: currentUser.email?.substringBefore("@")
+                                    ?: "Cooperative Society"
+                            }
+                    }
+                }
+                .addOnFailureListener {
+                    db.collection("cooperatives")
+                        .document(userId)
+                        .get()
+                        .addOnSuccessListener { coopDoc ->
+                            userName.value = coopDoc.getString("name")
+                                ?: currentUser.displayName
+                                ?: currentUser.email?.substringBefore("@")
+                                ?: "Cooperative Society"
+                        }
                 }
         }
     }

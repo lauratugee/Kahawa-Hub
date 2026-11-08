@@ -1,10 +1,7 @@
 package com.example.kahawahub
 
-import android.provider.ContactsContract
-import android.widget.Button
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -14,10 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,21 +20,18 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldValue
-import com.google.firebase.auth.EmailAuthProvider
 
 private val ProfileCream = Color(0xFFF7F3E9)
 private val ProfileBrown = Color(0xFF684832)
 private val ProfileGreen = Color(0xFF245640)
-private val ProfileMuted = Color(0XFF806F60)
+private val ProfileMuted = Color(0xFF806F60)
 private val ProfileRed = Color(0xFFF44336)
-
 
 @Composable
 fun ProfilePage(
     onBackClick: () -> Unit,
-    onLogoutClick:() -> Unit
+    onLogoutClick: () -> Unit
 ) {
-
     val context = LocalContext.current
     val currentUser = FirebaseAuth.getInstance().currentUser
     val db = FirebaseFirestore.getInstance()
@@ -56,11 +47,8 @@ fun ProfilePage(
     var isSaving by remember { mutableStateOf(false) }
     var isEditing by remember { mutableStateOf(false) }
     var showLeaveConfirmation by remember { mutableStateOf(false) }
-    var showPasswordInfo by remember { mutableStateOf(false) }
-    var currentPassword by remember { mutableStateOf("") }
     var showLogoutConfirmation by remember { mutableStateOf(false) }
-    var showEmailPasswordDialog by remember { mutableStateOf(false) }
-
+    var notificationsEnabled by remember { mutableStateOf(true) }
 
     LaunchedEffect(currentUser?.uid) {
         val userId = currentUser?.uid
@@ -68,7 +56,6 @@ fun ProfilePage(
         if (userId == null) {
             isLoading = false
             return@LaunchedEffect
-
         }
         db.collection("users")
             .document(userId)
@@ -76,8 +63,9 @@ fun ProfilePage(
             .addOnSuccessListener { document ->
                 fullName = document.getString("name") ?: ""
                 phoneNumber = document.getString("phone_number") ?: ""
-                email = document.getString("email") ?: currentUser?.email.orEmpty()
+                email = document.getString("email") ?: currentUser.email.orEmpty()
                 userType = document.getString("user_type") ?: ""
+                notificationsEnabled= document.getBoolean("notifications_enabled") ?: true
                 isLoading = false
             }
             .addOnFailureListener {
@@ -157,157 +145,15 @@ fun ProfilePage(
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        showLeaveConfirmation = false
-                    }
-                ) {
+                TextButton(onClick = { showLeaveConfirmation = false }) {
                     Text("Cancel")
                 }
             },
             containerColor = ProfileCream
         )
     }
-    if (showPasswordInfo) {
-        AlertDialog(
-            onDismissRequest = {
-                showPasswordInfo = false
-            },
-            title = {
-                Text("Security and Password Info")
-            },
-            text = {
-                Text("To change password, use the password reset option in the login page")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showPasswordInfo = false
-                    }
-                ) {
-                    Text("OK")
-                }
-            },
-            containerColor = ProfileCream
-        )
-    }
-    if (showEmailPasswordDialog){
-        AlertDialog(
-            onDismissRequest = {
-                showEmailPasswordDialog=false
-                currentPassword=""
-            },
-            title = {
-                Text("Enter your email and password")
-            },
-            text = {
-                Column (
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ){
-                    Text(
-                        "Please enter your current password to change your email address"
-                    )
-                    OutlinedTextField(
-                        value=currentPassword,
-                        onValueChange = {currentPassword=it},
-                        label = { Text(" Current password") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        visualTransformation =
-                            androidx.compose.ui.text.input.PasswordVisualTransformation(),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled=currentPassword.isNotBlank() && !isSaving,
-                    onClick = {
-                        val user=currentUser
 
-                        if (user?.email == null){
-                            Toast.makeText(
-                                context,
-                                "Please login again",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }else{
-                            isSaving=true
 
-                            val credential = EmailAuthProvider.getCredential(
-                                user.email!!,
-                                currentPassword
-                            )
-                            user.reauthenticate(credential)
-                                .addOnSuccessListener {
-                                    user.verifyBeforeUpdateEmail(email.trim())
-                                        .addOnSuccessListener {
-                                            db.collection("users")
-                                                .document(user.uid)
-                                                .set(
-                                                    mapOf(
-                                                        "name" to fullName.trim(),
-                                                        "phone_number" to phoneNumber.trim(),
-                                                    ),
-                                                    SetOptions.merge()
-                                                )
-                                                .addOnSuccessListener {
-                                                    isSaving = false
-                                                    isEditing = false
-                                                    showEmailPasswordDialog = false
-                                                    currentPassword = ""
-
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Verification email sent",
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                }
-                                                .addOnFailureListener {
-                                                    isSaving = false
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Could not save changes.Try again",
-                                                        Toast.LENGTH_LONG
-                                                    ).show()
-                                                }
-                                        }
-                                        .addOnFailureListener { exception ->
-                                            isSaving = false
-                                            Toast.makeText(
-                                                context,
-                                                exception.localizedMessage ?:
-                                                "Could not send verification email.Try again",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                }
-                                .addOnFailureListener {
-                                    isSaving = false
-                                    Toast.makeText(
-                                        context,
-                                        "Incorrect password.Try again",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                        }
-                    }
-                ){
-                    Text("Save")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showEmailPasswordDialog=false
-                        currentPassword=""
-                    }
-                ){
-                    Text("Cancel")
-                }
-            },
-            containerColor = ProfileCream
-        )
-    }
     if (showLogoutConfirmation){
         AlertDialog(
             onDismissRequest = {
@@ -331,11 +177,7 @@ fun ProfilePage(
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        showLogoutConfirmation=false
-                    }
-                ) {
+                TextButton(onClick = { showLogoutConfirmation = false }) {
                     Text("Cancel")
                 }
             },
@@ -428,8 +270,8 @@ fun ProfilePage(
                     }
                 }
             }
-            ProfileSection(title = "Personal information") {
 
+            ProfileSection(title = "Personal information") {
                 if (isEditing) {
                     OutlinedTextField(
                         value = fullName,
@@ -439,14 +281,7 @@ fun ProfilePage(
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp)
                     )
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email address") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp)
-                    )
+
                     OutlinedTextField(
                         value = phoneNumber,
                         onValueChange = { phoneNumber = it },
@@ -469,7 +304,7 @@ fun ProfilePage(
                         label = "Email address",
                         value = email.ifBlank { "Not provided" }
                     )
-                    HorizontalDivider(color = Color(0xFFEA3D9))
+                    HorizontalDivider(color = Color(0xFFEAA3D9))
 
                     ProfileInfoRow(
                         emoji = "📱",
@@ -578,7 +413,7 @@ fun ProfilePage(
                             value = cooperativeName
                         )
                         if (cooperativeLocation.isNotBlank()) {
-                            HorizontalDivider(color = Color(0XFFEAE3D9))
+                            HorizontalDivider(color = Color(0xFFEAE3D9))
 
                             ProfileInfoRow(
                                 emoji = "📍",
@@ -587,9 +422,7 @@ fun ProfilePage(
                             )
                         }
                         OutlinedButton(
-                            onClick = {
-                                showLeaveConfirmation = true
-                            },
+                            onClick = { showLeaveConfirmation = true },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
@@ -607,19 +440,69 @@ fun ProfilePage(
                     }
                 }
             }
-            ProfileSection(title = "Security and Password") {
+            ProfileSection(title = "Privacy settings") {
 
-                ProfileActionRow(
-                    emoji = "🔒",
-                    title = "Security and password",
-                    onClick = { showPasswordInfo = true }
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "🔔",
+                        fontSize = 22.sp
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 12.dp)
+                    ) {
+                        Text(
+                            text = "Notifications",
+                            color = ProfileBrown,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Receive updates and notifications",
+                            color = ProfileMuted,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Switch(
+                        checked = notificationsEnabled,
+                        onCheckedChange = { newValue ->
+
+                            val userId = currentUser?.uid
+
+                            if (userId != null) {
+                                db.collection("users")
+                                    .document(userId)
+                                    .update(
+                                        "notifications_enabled", newValue
+                                    )
+                                    .addOnSuccessListener {
+                                        notificationsEnabled = newValue
+
+                                        Toast.makeText(
+                                            context,
+                                            "Notifications preferences updated successfully",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                    .addOnFailureListener {
+                                        Toast.makeText(
+                                            context,
+                                            "Could not update notification preference",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            }
+                        }
+                    )
+                }
             }
-            Button(
-                onClick={
-                    showLogoutConfirmation=true
-                },
 
+
+            Button(
+                onClick = { showLogoutConfirmation = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -627,26 +510,24 @@ fun ProfilePage(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = ProfileRed
                 )
-            ){
+            ) {
                 Text(
                     text = "Logout",
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
-
-                    )
-                }
+                )
             }
-            Spacer(modifier = Modifier.height(12.dp))
         }
+        Spacer(modifier = Modifier.height(12.dp))
     }
-
+}
 
 @Composable
 private fun ProfileInfoRow(
-    emoji:String,
-    label:String,
-    value:String
+    emoji: String,
+    label: String,
+    value: String
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -654,57 +535,27 @@ private fun ProfileInfoRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text=emoji,
-            fontSize=22.sp
-        )
-         Column(
-             modifier = Modifier.weight(1f),
-             verticalArrangement = Arrangement.spacedBy(3.dp)
-         ){
-             Text(
-                 text=label,
-                 fontSize=12.sp,
-                 color=ProfileMuted
-             )
-             Text(
-                 text=value,
-                 fontSize = 14.sp,
-                 color=ProfileBrown,
-                 fontWeight = FontWeight.Medium
-             )
-
-         }
-
-    }
-}
-
-@Composable
-private fun ProfileActionRow(
-    emoji:String,
-    title:String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ){
-        Text(
-            text=emoji,
+            text = emoji,
             fontSize = 22.sp
         )
-        Text(
-            text=title,
-            color= ProfileBrown,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f)
-        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                color = ProfileMuted
+            )
+            Text(
+                text = value,
+                fontSize = 14.sp,
+                color = ProfileBrown,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
-
 
 @Composable
 private fun ProfileSection(
@@ -730,25 +581,4 @@ private fun ProfileSection(
         )
         content()
     }
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
