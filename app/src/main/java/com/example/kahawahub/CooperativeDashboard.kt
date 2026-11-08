@@ -1,6 +1,7 @@
 package com.example.kahawahub
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -26,7 +27,7 @@ private val CoffeeBrown = Color(0xFF684832)
 private val CoffeeGreen = Color(0xFF245640)
 
 @Composable
-fun  CooperativeDashboard(
+fun CooperativeDashboard(
     selectedTab: Int,
     onTabSelected:(Int) -> Unit,
     onLogoutClick: () -> Unit
@@ -38,6 +39,8 @@ fun  CooperativeDashboard(
     var announcementTitle by remember { mutableStateOf("") }
     var announcementMessage by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var members by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var searchQuery by remember { mutableStateOf("") }
 
 
     LaunchedEffect(Unit) {
@@ -250,31 +253,13 @@ fun  CooperativeDashboard(
                         text = "Members",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = CoffeeCream
-
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "Your cooperative at a glance",
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Text(
-                        text = "Welcome to your cooperative space",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = CoffeeGreen
+                        color = CoffeeBrown
                     )
                     Text(
-                        text = "Your cooperative information and services will appear here",
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = Color.DarkGray
+                        text = "Registered farmers will appear here",
+                        modifier = Modifier.padding(top = 12.dp)
                     )
                 }
-
-
 
                 2 -> {
                     Text(
