@@ -107,6 +107,9 @@ fun KahawaHubApp() {
     var farmerSelectedTab by remember {
         mutableIntStateOf(0)
     }
+    var cooperativeSelectedTab by remember{
+        mutableIntStateOf(0)
+    }
     when (currentScreen) {
 
         "welcome" -> {
@@ -184,11 +187,13 @@ fun KahawaHubApp() {
         }
         "cooperativeDashboard" -> {
             CooperativeDashboard(
-                onManagePricesClick = {
-                    currentScreen = "coffeePrices"
+                selectedTab = cooperativeSelectedTab,
+                onTabSelected = { tab ->
+                    cooperativeSelectedTab = tab
                 },
                 onLogoutClick = {
                     FirebaseAuth.getInstance().signOut()
+                    cooperativeSelectedTab=0
                     currentScreen="welcome"
                 }
 
