@@ -49,6 +49,8 @@ fun RegistrationPage(
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
+    var subCounty by remember { mutableStateOf("") }
+    var county by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var userType by remember { mutableStateOf("") }
@@ -138,6 +140,28 @@ fun RegistrationPage(
             )
         )
         Spacer(modifier = Modifier.height(12.dp))
+
+        if(userType=="Farmer"){
+            OutlinedTextField(
+                value = subCounty,
+                onValueChange = { subCounty = it },
+                label = { Text("Sub-County") },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+        )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = county,
+                onValueChange = { county = it },
+                label = { Text("County") },
+                singleLine = true,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         OutlinedTextField(
             value = password,
@@ -297,7 +321,10 @@ fun RegistrationPage(
                                     "name" to fullName,
                                     "email" to email,
                                     "phone_number" to phoneNumber,
-                                    "user_type" to userType
+                                    "user_type" to userType,
+                                    "sub_county" to if (userType == "Farmer") subCounty else "",
+                                    "county" to if (userType == "Farmer") county else ""
+
                                 )
                                 db.collection("users")
                                     .document(userId)
