@@ -676,6 +676,90 @@ fun CooperativeDashboard(
                         }
                     }
                 }
+                3 -> {
+                    Column(
+                        modifier=Modifier.fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ){
+                        Text(
+                        text = "Coffee Buying Prices",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = CoffeeBrown
+                    )
+                        Spacer(modifier=Modifier.height(12.dp))
+
+                        val categories = listOf(
+                            "Coffee Cherries" to "Fresh, raw cherries",
+                            "Mbuni" to "Dried coffee cherries",
+                            "Pulped Coffee" to "Pulpled and dried coffee"
+                        )
+                        categories.forEach { category ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(bottom = 12.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color.White
+                                ),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 4.dp
+                                )
+                            ){
+                                Column(
+                                    modifier=Modifier.padding(16.dp)
+                                ){
+                                    Text(
+                                        text=category.first,
+                                        fontSize=18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color=CoffeeBrown
+                                    )
+                                    Spacer(modifier=Modifier.height(8.dp))
+
+                                    Text(
+                                        text=category.second,
+                                        fontSize=14.sp,
+                                        color=Color.DarkGray
+                                    )
+                                    Spacer(modifier=Modifier.height(12.dp))
+
+                                    Text(
+                                        text="KSH per kg",
+                                        fontSize=14.sp,
+                                        color=CoffeeGreen
+                                    )
+                                    Spacer(modifier=Modifier.height(8.dp))
+
+                                    OutlinedTextField(
+                                        value = "",
+                                        onValueChange = {},
+                                        label = { Text("Price") },
+                                        modifier = Modifier.fillMaxWidth(),
+
+                                    )
+                                    Spacer(modifier=Modifier.height(12.dp))
+
+                                    Button(
+                                        onClick = {},
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = CoffeeGreen
+                                        )
+                                    ){
+                                        Text("Update Price")
+                                    }
+                                }
+                            }
+
+
+                        }
+
+
+
+                    }
+                }
 
 
 

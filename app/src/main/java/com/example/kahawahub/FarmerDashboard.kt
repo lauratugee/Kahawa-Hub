@@ -37,9 +37,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -49,6 +49,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.DisposableEffect
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val FarmerCream = Color(0xFFF7F3E9)
 private val FarmerBrown = Color(0xFF684832)
@@ -61,9 +65,10 @@ private val PoppinsFamily = FontFamily(
 )
 
 data class FarmerAnnouncement(
+    val id: String="",
     val title: String= "",
     val message: String= "",
-    val date: String= ""
+    val datePosted: Long= 0L
 )
 
 @Composable
@@ -81,13 +86,12 @@ fun FarmerDashboard(
     val announcements = remember {
         mutableStateListOf<FarmerAnnouncement>()
     }
-    var announcementsLoading by remember {
-        mutableStateOf(true)
-    }
+    var announcementsLoading by remember { mutableStateOf(true) }
+    var cooperativeId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
-        val userId = currentUser?.uid
+        val userId=currentUser?.uid
 
         if (userId != null) {
             FirebaseFirestore.getInstance()
@@ -119,41 +123,73 @@ fun FarmerDashboard(
                 .document(userId)
                 .get()
                 .addOnSuccessListener { document ->
-                    val cooperativeId = document.getString("cooperative_id")
+
+                    cooperativeId = document.getString("cooperative_id")
 
                     if (cooperativeId.isNullOrBlank()) {
-                        db.collection("announcements")
-                            .whereEqualTo("cooperative_id", cooperativeId)
-                            .get()
-                            .addOnSuccessListener { documents ->
-
-                                announcements.clear()
-
-                                documents.documents.forEach { document ->
-                                    announcements.add(
-                                        FarmerAnnouncement(
-                                            title = document.getString("title") ?: "",
-                                            message = document.getString("message") ?: "",
-                                            date = document.getString("date_posted") ?: ""
-                                        )
-                                    )
-                                }
-                                announcementsLoading = false
-                            }
-                            .addOnFailureListener {
-                                announcementsLoading = false
-                            }
-                    } else {
                         announcementsLoading = false
                     }
                 }
-                .addOnFailureListener {
+                .addOnFailureListener { exception ->
                     announcementsLoading = false
+                    android.util.Log.e(
+                        "FarmerAnnouncements",
+                        "Error fetching cooperative ID",
+                        exception
+                    )
                 }
         } else {
             announcementsLoading = false
         }
     }
+
+    DisposableEffect(cooperativeId) {
+        if (cooperativeId.isNullOrBlank()) {
+            announcements.clear()
+            announcementsLoading = false
+            onDispose { }
+
+        } else {
+            announcementsLoading = true
+
+            val listener = FirebaseFirestore.getInstance()
+                .collection("announcements")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, error ->
+
+                    if (error != null) {
+                        android.util.Log.e(
+                            "FarmerAnnouncements",
+                            "Error fetching announcements",
+                            error
+                        )
+                        announcementsLoading = false
+                        return@addSnapshotListener
+                    }
+                    announcements.clear()
+
+                    snapshot?.documents?.forEach { document ->
+                        announcements.add(
+                            FarmerAnnouncement(
+                                id = document.id,
+                                title = document.getString("title") ?: "",
+                                message = document.getString("message") ?: "",
+                                datePosted = document.getLong("date_posted") ?: 0L
+                            )
+                        )
+                    }
+                    announcementsLoading = false
+                }
+            onDispose {
+                listener.remove()
+            }
+        }
+    }
+
+
+
+
+
 
 
 
@@ -291,14 +327,21 @@ fun FarmerDashboard(
                         }
 
                         else -> {
-                            announcements.forEach { announcement ->
+                            announcements
+                                .sortedByDescending { it.datePosted }
+                                .forEach { announcement ->
+
+
                                 Card(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(bottom = 12.dp),
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(18.dp),
                                     colors = CardDefaults.cardColors(
                                         containerColor = FarmerCream
+                                    ),
+                                    elevation= CardDefaults.cardElevation(
+                                        defaultElevation = 4.dp
                                     )
                                 ) {
                                     Column(
@@ -319,15 +362,34 @@ fun FarmerDashboard(
                                             fontSize = 14.sp,
                                             color = FarmerBrown
                                         )
-                                        if (announcement.date.isNotEmpty()) {
+                                        if (announcement.datePosted>0) {
                                             Spacer(modifier = Modifier.height(8.dp))
 
-                                            Text(
-                                                text = announcement.date,
-                                                fontFamily = PoppinsFamily,
-                                                fontSize = 12.sp,
-                                                color = FarmerBrown
-                                            )
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ){
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ){
+                                                    Text(
+                                                        text= "📃",
+                                                        fontSize = 12.sp,
+                                                        modifier=Modifier.padding(end=5.dp)
+                                                    )
+                                                    Text(
+                                                        text = SimpleDateFormat(
+                                                    "dd MMM yyyy, HH:mm",
+                                                            Locale.getDefault()
+                                                        ).format(
+                                                            Date(announcement.datePosted)),
+                                                        fontFamily = PoppinsFamily,
+                                                        fontSize = 12.sp,
+                                                        color = FarmerBrown
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -336,6 +398,7 @@ fun FarmerDashboard(
                     }
                 }
             }
+
             1 -> {
                 Box(
                     modifier = Modifier
