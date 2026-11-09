@@ -42,8 +42,8 @@ fun CooperativeDashboard(
 
 ) {
     val context = LocalContext.current
-    val db=FirebaseFirestore.getInstance()
-    val cooperativeId=FirebaseAuth.getInstance().currentUser?.uid
+    val db = FirebaseFirestore.getInstance()
+    val cooperativeId = FirebaseAuth.getInstance().currentUser?.uid
 
     var userName by remember { mutableStateOf("Cooperative Society") }
     var announcementTitle by remember { mutableStateOf("") }
@@ -81,7 +81,7 @@ fun CooperativeDashboard(
                             .document(userId)
                             .get()
                             .addOnSuccessListener { coopDoc ->
-                                userName= coopDoc.getString("name")
+                                userName = coopDoc.getString("name")
                                     ?: currentUser.displayName
                                             ?: currentUser.email?.substringBefore("@")
                                             ?: "Cooperative Society"
@@ -153,8 +153,8 @@ fun CooperativeDashboard(
     DisposableEffect(cooperativeId) {
 
         if (cooperativeId == null) {
-            announcements=emptyList()
-            onDispose {  }
+            announcements = emptyList()
+            onDispose { }
         } else {
 
             val listener = db.collection("announcements")
@@ -164,7 +164,8 @@ fun CooperativeDashboard(
                     if (error != null) {
                         Log.e(
                             "Announcements",
-                            "Error fetching announcements: ${error.message}")
+                            "Error fetching announcements: ${error.message}"
+                        )
                         return@addSnapshotListener
                     }
                     announcements = snapshot?.documents?.map { document ->
@@ -180,7 +181,7 @@ fun CooperativeDashboard(
                 listener.remove()
 
 
-                    }
+            }
         }
     }
 
@@ -197,12 +198,13 @@ fun CooperativeDashboard(
                     "Prices",
                     "Profile"
                 )
-                val symbols = listOf("🏠","👥","📃","💰","👤")
+                val symbols = listOf("🏠", "👥", "📃", "💰", "👤")
 
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
                         selected = selectedTab == index,
-                        onClick = { onTabSelected(index)
+                        onClick = {
+                            onTabSelected(index)
                         },
 
                         icon = {
@@ -237,12 +239,12 @@ fun CooperativeDashboard(
             when (selectedTab) {
                 0 -> {
                     Column(
-                        modifier=Modifier
+                        modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                    ){
+                    ) {
                         Box(
-                            modifier= Modifier
+                            modifier = Modifier
                                 .fillMaxWidth()
                                 .height(190.dp)
                         ) {
@@ -268,89 +270,89 @@ fun CooperativeDashboard(
                                 }
                             }
                         }
-                        Spacer(modifier=Modifier.height(48.dp))
+                        Spacer(modifier = Modifier.height(48.dp))
 
                         Text(
                             text = "Welcome, ${userName}",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
-                            color=CoffeeBrown
+                            color = CoffeeBrown
                         )
-                        Spacer(modifier=Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text="Cooperative location",
+                            text = "Cooperative location",
                             fontSize = 14.sp,
-                            color=CoffeeGreen
+                            color = CoffeeGreen
                         )
-                        Spacer(modifier=Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text="About Us",
+                            text = "About Us",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color=CoffeeBrown
+                            color = CoffeeBrown
                         )
-                        Spacer(modifier=Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text="Description of the cooperative",
+                            text = "Description of the cooperative",
                             fontSize = 14.sp,
-                            color=Color.DarkGray,
+                            color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 18.dp),
-                            color= Color.Gray
+                            color = Color.Gray
                         )
                         Text(
-                            text="Our Services",
+                            text = "Our Services",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color=CoffeeBrown
+                            color = CoffeeBrown
                         )
-                        Spacer(modifier=Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text="Services offered will be displayed here",
+                            text = "Services offered will be displayed here",
                             fontSize = 14.sp,
-                            color=Color.DarkGray,
+                            color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
                         HorizontalDivider(
-                            modifier=Modifier.padding(vertical=18.dp),
-                            color= Color.LightGray
+                            modifier = Modifier.padding(vertical = 18.dp),
+                            color = Color.LightGray
                         )
                         Text(
-                            text="Membership Information",
+                            text = "Membership Information",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color=CoffeeBrown
+                            color = CoffeeBrown
                         )
-                        Spacer(modifier=Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text="Information about the cooperative members will be displayed here",
+                            text = "Information about the cooperative members will be displayed here",
                             fontSize = 14.sp,
-                            color=Color.DarkGray,
+                            color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
                         HorizontalDivider(
-                            modifier=Modifier.padding(vertical=18.dp),
-                            color= Color.LightGray
+                            modifier = Modifier.padding(vertical = 18.dp),
+                            color = Color.LightGray
                         )
                         Text(
-                            text="Contact Details",
+                            text = "Contact Details",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color=CoffeeBrown
+                            color = CoffeeBrown
                         )
-                        Spacer(modifier=Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         Text(
-                            text="Contact information for the cooperative will be displayed here",
+                            text = "Contact information for the cooperative will be displayed here",
                             fontSize = 14.sp,
-                            color=Color.DarkGray,
+                            color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
                     }
@@ -387,7 +389,7 @@ fun CooperativeDashboard(
                     Column(
                         modifier = Modifier.fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                    ){
+                    ) {
                         Text(
                             text = "Announcements",
                             fontSize = 24.sp,
@@ -398,7 +400,7 @@ fun CooperativeDashboard(
 
 
                         Text(
-                            text=if(editingAnnouncementId!=null)
+                            text = if (editingAnnouncementId != null)
                                 "Edit Announcement"
                             else "Create Announcement",
                             fontSize = 18.sp,
@@ -413,7 +415,7 @@ fun CooperativeDashboard(
                             label = { Text("Announcement Title") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape=RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -423,7 +425,7 @@ fun CooperativeDashboard(
                             label = { Text("Announcement Message") },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 4,
-                            shape=RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp)
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
@@ -527,12 +529,12 @@ fun CooperativeDashboard(
                             color = Color.LightGray
                         )
                         Text(
-                            text="My Announcements",
+                            text = "My Announcements",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color=CoffeeBrown
+                            color = CoffeeBrown
                         )
-                        Spacer(modifier=Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         if (announcements.isEmpty()) {
                             Text(
@@ -547,31 +549,32 @@ fun CooperativeDashboard(
                                 }
                                 .forEach { announcement ->
 
-                                    val announcementId=announcement["id"] as String ?: ""
+                                    val announcementId = announcement["id"] as String ?: ""
 
                                     Card(
                                         modifier = Modifier.fillMaxWidth()
-                                            .padding(bottom=12.dp),
-                                        shape=RoundedCornerShape(14.dp),
+                                            .padding(bottom = 12.dp),
+                                        shape = RoundedCornerShape(14.dp),
                                         colors = CardDefaults.cardColors(
                                             containerColor = Color.White
                                         )
-                                    ){
+                                    ) {
                                         Column(
-                                            modifier=Modifier.padding(16.dp)
-                                        ){
+                                            modifier = Modifier.padding(16.dp)
+                                        ) {
                                             Text(
-                                                text=announcement["title"] as String ?: "",
+                                                text = announcement["title"] as String ?: "",
                                                 fontSize = 18.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = CoffeeBrown
                                             )
-                                            Spacer(modifier=Modifier.height(8.dp))
+                                            Spacer(modifier = Modifier.height(8.dp))
 
-                                            val datePosted=announcement["date_posted"] as? Long ?: 0L
+                                            val datePosted =
+                                                announcement["date_posted"] as? Long ?: 0L
 
                                             Text(
-                                                text=if(datePosted>0L) {
+                                                text = if (datePosted > 0L) {
                                                     SimpleDateFormat(
                                                         "dd/MM/yyyy",
                                                         Locale.getDefault()
@@ -579,23 +582,23 @@ fun CooperativeDashboard(
                                                 } else {
                                                     "Unknown Date"
                                                 },
-                                                fontSize=12.sp,
-                                                color=Color.Gray
+                                                fontSize = 12.sp,
+                                                color = Color.Gray
                                             )
-                                            Spacer(modifier=Modifier.height(8.dp))
+                                            Spacer(modifier = Modifier.height(8.dp))
 
 
                                             Text(
-                                                text=announcement["message"] as String ?: "",
+                                                text = announcement["message"] as String ?: "",
                                                 fontSize = 14.sp,
                                                 color = Color.DarkGray
                                             )
-                                            Spacer(modifier=Modifier.height(12.dp))
+                                            Spacer(modifier = Modifier.height(12.dp))
 
                                             Row(
-                                                modifier=Modifier.fillMaxWidth(),
+                                                modifier = Modifier.fillMaxWidth(),
                                                 horizontalArrangement = Arrangement.End
-                                            ){
+                                            ) {
                                                 TextButton(
                                                     onClick = {
                                                         announcementTitle =
@@ -604,7 +607,7 @@ fun CooperativeDashboard(
                                                             announcement["message"] as String ?: ""
                                                         editingAnnouncementId = announcementId
                                                     }
-                                                ){
+                                                ) {
                                                     Text(
                                                         text = "Edit",
                                                         color = CoffeeGreen
@@ -614,14 +617,14 @@ fun CooperativeDashboard(
                                                     onClick = {
                                                         showAnnouncementMenu = announcementId
                                                     }
-                                                ){
+                                                ) {
                                                     Text(
                                                         text = "Delete",
                                                         color = CoffeeRed
                                                     )
                                                 }
                                             }
-                                            if(showAnnouncementMenu==announcementId){
+                                            if (showAnnouncementMenu == announcementId) {
                                                 AlertDialog(
                                                     onDismissRequest = {
                                                         showAnnouncementMenu = null
@@ -655,7 +658,7 @@ fun CooperativeDashboard(
                                                                         ).show()
                                                                     }
                                                             }
-                                                        ){
+                                                        ) {
                                                             Text(
                                                                 text = "Delete",
                                                                 color = CoffeeRed
@@ -679,18 +682,19 @@ fun CooperativeDashboard(
                         }
                     }
                 }
+
                 3 -> {
                     Column(
-                        modifier=Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize()
                             .verticalScroll(rememberScrollState())
-                    ){
+                    ) {
                         Text(
-                        text = "Coffee Buying Prices",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CoffeeBrown
-                    )
-                        Spacer(modifier=Modifier.height(12.dp))
+                            text = "Coffee Buying Prices",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = CoffeeBrown
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         val categories = listOf(
                             "Coffee Cherries" to "Fresh, raw cherries",
@@ -708,34 +712,34 @@ fun CooperativeDashboard(
                                 elevation = CardDefaults.cardElevation(
                                     defaultElevation = 4.dp
                                 )
-                            ){
+                            ) {
                                 Column(
-                                    modifier=Modifier.padding(16.dp)
-                                ){
+                                    modifier = Modifier.padding(16.dp)
+                                ) {
                                     Text(
-                                        text=category.first,
-                                        fontSize=18.sp,
+                                        text = category.first,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color=CoffeeBrown
+                                        color = CoffeeBrown
                                     )
-                                    Spacer(modifier=Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
 
                                     Text(
-                                        text=category.second,
-                                        fontSize=14.sp,
-                                        color=Color.DarkGray
+                                        text = category.second,
+                                        fontSize = 14.sp,
+                                        color = Color.DarkGray
                                     )
-                                    Spacer(modifier=Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
 
                                     Text(
-                                        text="KSH per kg",
-                                        fontSize=14.sp,
-                                        color=CoffeeGreen
+                                        text = "KSH per kg",
+                                        fontSize = 14.sp,
+                                        color = CoffeeGreen
                                     )
-                                    Spacer(modifier=Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
 
                                     OutlinedTextField(
-                                        value = when(category.first){
+                                        value = when (category.first) {
                                             "Coffee Cherries" -> cherriesPrice
                                             "Mbuni" -> mbuniPrice
                                             "Pulped Coffee" -> pulpedPrice
@@ -748,7 +752,7 @@ fun CooperativeDashboard(
                                                 "Pulped Coffee" -> pulpedPrice = newValue
                                             }
                                         },
-                                        label={
+                                        label = {
                                             Text("Price")
                                         },
                                         modifier = Modifier.fillMaxWidth(),
@@ -757,7 +761,7 @@ fun CooperativeDashboard(
                                     )
 
 
-                                    Spacer(modifier=Modifier.height(12.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
 
                                     Button(
                                         onClick = {
@@ -769,13 +773,13 @@ fun CooperativeDashboard(
                                             }
                                             val priceValue = enteredPrice.toLongOrNull()
 
-                                            if (cooperativeId==null){
+                                            if (cooperativeId == null) {
                                                 Toast.makeText(
                                                     context,
                                                     "Failed to update price",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
-                                            } else if (priceValue ==null || priceValue <= 0){
+                                            } else if (priceValue == null || priceValue <= 0) {
                                                 Toast.makeText(
                                                     context,
                                                     "Please enter a valid price",
@@ -838,7 +842,7 @@ fun CooperativeDashboard(
                                         colors = ButtonDefaults.buttonColors(
                                             containerColor = CoffeeGreen
                                         )
-                                    ){
+                                    ) {
                                         Text("Update Price")
                                     }
                                 }
@@ -848,67 +852,14 @@ fun CooperativeDashboard(
                         }
 
 
-
                     }
                 }
 
 
-
                 4 -> {
-                    Text(
-                        text = "Profile",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = CoffeeBrown
+                    CooperativeProfilePage(
+                        onLogoutClick = onLogoutClick
                     )
-                    Spacer(modifier=Modifier.height(12.dp))
-
-
-                    Text(
-                        text = userName,
-                        modifier = Modifier.padding(top = 12.dp),
-                        color=Color.DarkGray
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    OutlinedButton(
-                        onClick = { showLogoutDialog = true },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("Logout")
-                    }
-                    if (showLogoutDialog) {
-                        AlertDialog(
-                            onDismissRequest = {
-                                showLogoutDialog = false
-                            },
-                            title = {
-                                Text("Logout")
-                            },
-                            text = {
-                                Text("Are you sure you want to logout?")
-                            },
-                            confirmButton = {
-                                TextButton(
-                                    onClick = onLogoutClick
-                                ) {
-                                    Text("Logout")
-                                }
-
-                            },
-                            dismissButton = {
-                                TextButton(
-                                    onClick = { showLogoutDialog = false }
-                                ) {
-                                    Text("Cancel")
-                                }
-                            }
-                        )
-                    }
                 }
             }
         }

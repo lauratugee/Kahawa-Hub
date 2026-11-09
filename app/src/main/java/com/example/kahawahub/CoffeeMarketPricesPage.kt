@@ -38,8 +38,8 @@ data class MarketPrice(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoffeeMarketPricesPage(
-    cooperativeId:String?,
-    onBackClick: ()-> Unit
+    cooperativeId: String? = null,
+    onBackClick: () -> Unit
 ){
 
 
@@ -56,46 +56,41 @@ fun CoffeeMarketPricesPage(
     var showCooperativeMenu by remember { mutableStateOf(false) }
 
     DisposableEffect(cooperativeId) {
+        isLoading = true
+        val collectionRef = FirebaseFirestore.getInstance().collection("coffee_prices")
+        val query = if (!cooperativeId.isNullOrBlank()) {
+            collectionRef.whereEqualTo("cooperative_id", cooperativeId)
+        } else {
+            collectionRef
+        }
 
-        if (cooperativeId.isNullOrBlank()){
-            prices=emptyList()
-            isLoading=false
-            onDispose{ }
-        } else{
-            isLoading=true
-
-        val listener = FirebaseFirestore.getInstance()
-            .collection("coffee_prices")
-            .whereEqualTo("cooperative_id", cooperativeId)
-            .addSnapshotListener { documents, error ->
-
-                if (error != null) {
-                    loadError = true
-                    isLoading = false
-                    return@addSnapshotListener
-                }
-
-                if (documents != null) {
-                    val marketPrices = documents.documents.map { document ->
-                        MarketPrice(
-                            id = document.id,
-                            coffeeType = document.getString("coffee_type") ?: "",
-                            price = document.getLong("price") ?: 0L,
-                            previousPrice = document.getLong("previous_price") ?: 0L,
-                            currency = document.getString("currency") ?: "KES",
-                            priceUnit = document.getString("price_unit") ?: "per kg",
-                            cooperativeName = document.getString("cooperative_name") ?: "",
-                            cooperativeId = document.getString("cooperative_id") ?: ""
-                        )
-                    }
-                    loadError = false
-                    isLoading = false
-                }
+        val listener = query.addSnapshotListener { documents, error ->
+            if (error != null) {
+                loadError = true
+                isLoading = false
+                return@addSnapshotListener
             }
 
-            onDispose {
-                listener.remove()
+            if (documents != null) {
+                prices = documents.documents.map { document ->
+                    MarketPrice(
+                        id = document.id,
+                        coffeeType = document.getString("coffee_type") ?: "",
+                        price = document.getLong("price") ?: 0L,
+                        previousPrice = document.getLong("previous_price") ?: 0L,
+                        currency = document.getString("currency") ?: "KES",
+                        priceUnit = document.getString("price_unit") ?: "per kg",
+                        cooperativeName = document.getString("cooperative_name") ?: "",
+                        cooperativeId = document.getString("cooperative_id") ?: ""
+                    )
+                }
+                loadError = false
+                isLoading = false
             }
+        }
+
+        onDispose {
+            listener.remove()
         }
     }
 
@@ -146,7 +141,15 @@ fun CoffeeMarketPricesPage(
         topBar = {
             TopAppBar(
                 title = { Text("Coffee Market Prices", color = MarketBrown) },
-
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MarketBrown
+                        )
+                    }
+                }
             )
         },
         containerColor = MarketCream
