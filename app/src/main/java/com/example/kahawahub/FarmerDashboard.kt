@@ -406,6 +406,7 @@ fun FarmerDashboard(
                         .padding(innerPadding)
                 ) {
                     CoffeeMarketPricesPage(
+                        cooperativeId=cooperativeId,
                         onBackClick = {
                             onTabSelected(0)
                         }

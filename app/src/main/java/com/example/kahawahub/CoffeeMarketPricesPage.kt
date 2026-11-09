@@ -37,7 +37,12 @@ data class MarketPrice(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoffeeMarketPricesPage(onBackClick: () -> Unit) {
+fun CoffeeMarketPricesPage(
+    cooperativeId:String?,
+    onBackClick: ()-> Unit
+){
+
+
     var prices by remember { mutableStateOf<List<MarketPrice>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var loadError by remember { mutableStateOf(false) }
@@ -50,10 +55,20 @@ fun CoffeeMarketPricesPage(onBackClick: () -> Unit) {
     var showCoffeeMenu by remember { mutableStateOf(false) }
     var showCooperativeMenu by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(cooperativeId) {
+
+        if (cooperativeId.isNullOrBlank()){
+            prices=emptyList()
+            isLoading=false
+            onDispose{ }
+        } else{
+            isLoading=true
+
         val listener = FirebaseFirestore.getInstance()
             .collection("coffee_prices")
+            .whereEqualTo("cooperative_id", cooperativeId)
             .addSnapshotListener { documents, error ->
+
                 if (error != null) {
                     loadError = true
                     isLoading = false
@@ -73,41 +88,14 @@ fun CoffeeMarketPricesPage(onBackClick: () -> Unit) {
                             cooperativeId = document.getString("cooperative_id") ?: ""
                         )
                     }
-                    prices = marketPrices
                     loadError = false
                     isLoading = false
-
-                    marketPrices
-                        .map { it.cooperativeId }
-                        .filter { it.isNotBlank() }
-                        .distinct()
-                        .forEach { cooperativeId ->
-                            FirebaseFirestore.getInstance()
-                                .collection("cooperatives")
-                                .whereEqualTo("cooperative_id", cooperativeId)
-                                .limit(1)
-                                .get()
-                                .addOnSuccessListener { cooperativeDocuments ->
-                                    val cooperativeName = cooperativeDocuments.documents
-                                        .firstOrNull()
-                                        ?.getString("name")
-
-                                    if (!cooperativeName.isNullOrBlank()) {
-                                        prices = prices.map { marketPrice ->
-                                            if (marketPrice.cooperativeId == cooperativeId) {
-                                                marketPrice.copy(cooperativeName = cooperativeName)
-                                            } else {
-                                                marketPrice
-                                            }
-                                        }
-                                    }
-                                }
-                        }
                 }
             }
 
-        onDispose {
-            listener.remove()
+            onDispose {
+                listener.remove()
+            }
         }
     }
 
