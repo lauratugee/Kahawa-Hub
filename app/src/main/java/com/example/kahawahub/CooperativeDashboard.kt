@@ -23,6 +23,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.text.input.TextFieldValue
 import android.util.Log
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -146,7 +149,7 @@ fun CooperativeDashboard(
     }
     DisposableEffect(cooperativeId) {
 
-        if (cooperativeId != null) {
+        if (cooperativeId == null) {
             announcements=emptyList()
             onDispose {  }
         } else {
@@ -393,8 +396,8 @@ fun CooperativeDashboard(
 
                         Text(
                             text=if(editingAnnouncementId!=null)
-                                "Create Announcement"
-                            else "Edit Announcement",
+                                "Edit Announcement"
+                            else "Create Announcement",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = CoffeeBrown
@@ -561,6 +564,23 @@ fun CooperativeDashboard(
                                                 color = CoffeeBrown
                                             )
                                             Spacer(modifier=Modifier.height(8.dp))
+
+                                            val datePosted=announcement["date_posted"] as? Long ?: 0L
+
+                                            Text(
+                                                text=if(datePosted>0L) {
+                                                    SimpleDateFormat(
+                                                        "dd/MM/yyyy",
+                                                        Locale.getDefault()
+                                                    ).format(Date(datePosted))
+                                                } else {
+                                                    "Unknown Date"
+                                                },
+                                                fontSize=12.sp,
+                                                color=Color.Gray
+                                            )
+                                            Spacer(modifier=Modifier.height(8.dp))
+
 
                                             Text(
                                                 text=announcement["message"] as String ?: "",
