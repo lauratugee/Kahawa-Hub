@@ -54,6 +54,9 @@ fun CooperativeDashboard(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var members by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
+    var cherriesPrice by remember { mutableStateOf("") }
+    var mbuniPrice by remember { mutableStateOf("") }
+    var pulpedPrice by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
@@ -732,16 +735,104 @@ fun CooperativeDashboard(
                                     Spacer(modifier=Modifier.height(8.dp))
 
                                     OutlinedTextField(
-                                        value = "",
-                                        onValueChange = {},
-                                        label = { Text("Price") },
+                                        value = when(category.first){
+                                            "Coffee Cherries" -> cherriesPrice
+                                            "Mbuni" -> mbuniPrice
+                                            "Pulped Coffee" -> pulpedPrice
+                                            else -> ""
+                                        },
+                                        onValueChange = { newValue ->
+                                            when (category.first) {
+                                                "Coffee Cherries" -> cherriesPrice = newValue
+                                                "Mbuni" -> mbuniPrice = newValue
+                                                "Pulped Coffee" -> pulpedPrice = newValue
+                                            }
+                                        },
+                                        label={
+                                            Text("Price")
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
-
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp)
                                     )
+
+
                                     Spacer(modifier=Modifier.height(12.dp))
 
                                     Button(
-                                        onClick = {},
+                                        onClick = {
+                                            val enteredPrice = when (category.first) {
+                                                "Coffee Cherries" -> cherriesPrice
+                                                "Mbuni" -> mbuniPrice
+                                                "Pulped Coffee" -> pulpedPrice
+                                                else -> ""
+                                            }
+                                            val priceValue = enteredPrice.toLongOrNull()
+
+                                            if (cooperativeId==null){
+                                                Toast.makeText(
+                                                    context,
+                                                    "Failed to update price",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else if (priceValue ==null || priceValue <= 0){
+                                                Toast.makeText(
+                                                    context,
+                                                    "Please enter a valid price",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } else {
+                                                val categoryKey = when (category.first) {
+                                                    "Coffee Cherries" -> "cherries_price"
+                                                    "Mbuni" -> "mbuni_price"
+                                                    "Pulped Coffee" -> "pulped_price"
+                                                    else -> ""
+                                                }
+                                                val priceDocument = db.collection("coffee_prices")
+                                                    .document("${cooperativeId} - ${categoryKey}")
+
+
+                                                priceDocument.get()
+                                                    .addOnSuccessListener { document ->
+
+                                                        val previousPrice =
+                                                            document.getLong("price") ?: 0L
+
+                                                        val priceData = hashMapOf(
+                                                            "coffee_type" to category.first,
+                                                            "price" to priceValue,
+                                                            "previous_price" to previousPrice,
+                                                            "currency" to "KES",
+                                                            "price_unit" to "per kg",
+                                                            "cooperative_name" to userName,
+                                                            "cooperative_id" to cooperativeId,
+                                                            "date_updated" to System.currentTimeMillis()
+                                                        )
+                                                        priceDocument.set(priceData)
+                                                            .addOnSuccessListener {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    " ${category.first} Price updated successfully",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
+                                                            }
+                                                            .addOnFailureListener { error ->
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Failed to update price: ${error.message}",
+                                                                    Toast.LENGTH_LONG
+                                                                ).show()
+                                                            }
+                                                    }
+                                                    .addOnFailureListener { error ->
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Failed to fetch previous price: ${error.message}",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                            }
+                                        },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(
