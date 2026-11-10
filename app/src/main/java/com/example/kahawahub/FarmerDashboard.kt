@@ -444,6 +444,19 @@ fun FarmerDashboard(
                         .fillMaxSize()
                         .padding(innerPadding)
                 ) {
+                    MyCoffeeSupplyPage(
+                        cooperativeId = cooperativeId
+                    )
+
+                }
+
+            }
+            3-> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
                     FindCooperativePage(
                         onBackClick = {
                             onTabSelected(0)
@@ -451,7 +464,7 @@ fun FarmerDashboard(
                     )
                 }
             }
-            3 -> {
+            4 -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
