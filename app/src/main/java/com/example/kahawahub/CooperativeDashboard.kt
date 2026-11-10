@@ -196,9 +196,10 @@ fun CooperativeDashboard(
                     "Members",
                     "Announcements",
                     "Prices",
+                    "Market",
                     "Profile"
                 )
-                val symbols = listOf("🏠", "👥", "📃", "💰", "👤")
+                val symbols = listOf("🏠", "👥", "📃", "💰","💹", "👤")
 
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
@@ -854,9 +855,28 @@ fun CooperativeDashboard(
 
                     }
                 }
+                4 ->{
+                    Column(
+                        modifier=Modifier.fillMaxSize()
+                    ){
+                        Text(
+                            text = "Market Managegement",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = CoffeeBrown
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text="Manage factories, buyers, market offers and linkage requests",
+                            fontSize = 14.sp,
+                            color = Color.DarkGray
+                        )
+                    }
+                }
 
 
-                4 -> {
+                5 -> {
                     CooperativeProfilePage(
                         onLogoutClick = onLogoutClick
                     )
