@@ -860,7 +860,7 @@ fun CooperativeDashboard(
                         modifier=Modifier.fillMaxSize()
                     ){
                         Text(
-                            text = "Market Managegement",
+                            text = "Market Management",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = CoffeeBrown

@@ -203,16 +203,25 @@ fun FarmerDashboard(
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { onTabSelected(0)  },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
+                    icon = {
+                        Text(
+                            text="🏠",
+                            fontSize = 20.sp
+                        )
+                    },
                     label = { Text("Home") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = {
-                        onTabSelected(1)
+                        onTabSelected(1) },
+                    icon = {
+                        Text(
+                            text="💰",
+                            fontSize = 20.sp
+                        )
                     },
-                    icon = { Icon(Icons.Filled.Favorite, contentDescription = "Prices") },
-                    label = { Text("Prices") }
+                    label = { Text("Coffee Market") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
@@ -220,19 +229,35 @@ fun FarmerDashboard(
                         onTabSelected(2)
                     },
                     icon = {
-                        Icon(
-                            Icons.Filled.Notifications,
-                            contentDescription = "Cooperatives"
+                        Text(
+                            text="📃",
+                            fontSize = 20.sp
+                        )
+                    },
+                    label = { Text("My Supply") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = {
+                        onTabSelected(3) },
+                    icon = {
+                        Text(
+                            text="👥",
+                            fontSize = 20.sp
                         )
                     },
                     label = { Text("Cooperatives") }
                 )
                 NavigationBarItem(
-                    selected = selectedTab == 3,
+                    selected = selectedTab == 4,
                     onClick = {
-                        onTabSelected(3)
+                        onTabSelected(4) },
+                    icon = {
+                        Text(
+                            text="👤",
+                            fontSize = 20.sp
+                        )
                     },
-                    icon = { Icon(Icons.Filled.AccountCircle, contentDescription = "Profile") },
                     label = { Text("Profile") }
                 )
             }
