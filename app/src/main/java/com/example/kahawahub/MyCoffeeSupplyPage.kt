@@ -376,75 +376,66 @@ fun MyCoffeeSupplyPage(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
-
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.coffeeType,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = SupplyBrown
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Quantity: ${item.quantityKg} kg",
-                                        fontSize = 14.sp,
-                                        color = Color.DarkGray
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = dateFormat.format(Date(item.dateSubmitted)),
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                }
-
-                                // Status Tag
-                                val (statusBg, statusFg) = when (item.status.lowercase()) {
-                                    "approved", "accepted" -> Color(0xFFC8E6C9) to SupplyGreen
-                                    "rejected" -> Color(0xFFFFCDD2) to SupplyRed
-                                    else -> Color(0xFFFFE0B2) to SupplyOrange
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = statusBg,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                ) {
-                                    Text(
-                                        text = item.status,
-                                        color = statusFg,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(
-                                            horizontal = 12.dp,
-                                            vertical = 6.dp
-                                        )
-                                    )
-                                }
-                            }
-                            if (item.status.lowercase() == "rejected" && item.rejectionReason.isNotBlank()) {
-                                Spacer(modifier = Modifier.width(10.dp))
-                                HorizontalDivider(color = Color(0xFFFFCDD2), thickness = 1.dp)
-                                Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Reason for Rejection: ${item.rejectionReason}",
-                                    fontSize = 13.sp,
-                                    color = SupplyRed,
-                                    fontWeight = FontWeight.Medium
+                                    text = item.coffeeType,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SupplyBrown
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Quantity: ${item.quantityKg} kg",
+                                    fontSize = 14.sp,
+                                    color = Color.DarkGray
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = dateFormat.format(Date(item.dateSubmitted)),
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
+                            }
+
+                            // Status Tag
+                            val (statusBg, statusFg) = when (item.status.lowercase()) {
+                                "approved", "accepted" -> Color(0xFFC8E6C9) to SupplyGreen
+                                "rejected" -> Color(0xFFFFCDD2) to SupplyRed
+                                else -> Color(0xFFFFE0B2) to SupplyOrange
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = statusBg,
+                                modifier = Modifier.padding(start = 8.dp)
+                            ) {
+                                Text(
+                                    text = item.status,
+                                    color = statusFg,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(
+                                        horizontal = 12.dp,
+                                        vertical = 6.dp
+                                    )
                                 )
                             }
                         }
+
+                        if (item.status.lowercase() == "rejected" && item.rejectionReason.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = Color(0xFFFFCDD2), thickness = 1.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Reason for Rejection: ${item.rejectionReason}",
+                                fontSize = 13.sp,
+                                color = SupplyRed,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
-
             }
         }
     }
