@@ -57,6 +57,7 @@ fun CooperativeDashboard(
     var cherriesPrice by remember { mutableStateOf("") }
     var mbuniPrice by remember { mutableStateOf("") }
     var pulpedPrice by remember { mutableStateOf("") }
+    var submissions by remember { mutableStateOf<List<Map<String,Any>>>(emptyList()) }
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
@@ -180,6 +181,41 @@ fun CooperativeDashboard(
             onDispose {
                 listener.remove()
 
+
+            }
+        }
+    }
+    DisposableEffect(cooperativeId) {
+        if (cooperativeId == null) {
+            submissions = emptyList()
+            onDispose { }
+        } else {
+            val listener = db.collection("coffee_supply_submissions")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e("KahawaSupply", "Error fetching submissions ${error.message}",)
+                        return@addSnapshotListener
+                    }
+                    submissions = snapshot?.documents?.map { document ->
+                        mapOf(
+                            "id" to document.id,
+                            "farmer_id" to (document.getString("farmer_id") ?: ""),
+                            "farmer_name" to (document.getString("farmer_name") ?: ""),
+                            "coffee_type" to (document.getString("coffee_type") ?: ""),
+                            "quantity_kg" to (document.getLong("quantity_kg") ?: 0L),
+                            "verified_quantity_kg" to (document.getLong("verified_quantity_kg")
+                                ?: 0L),
+                            "rejection_reason" to (document.getString("rejection_reason") ?: ""),
+                            "status" to (document.getString("status") ?: ""),
+                            "date_submitted" to (document.getLong("date_submitted") ?: 0L),
+                            "county" to (document.getString("county") ?: ""),
+                            "sub_county" to (document.getString("sub_county") ?: "")
+                        )
+                    } ?: emptyList()
+                }
+            onDispose {
+                listener.remove()
 
             }
         }

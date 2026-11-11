@@ -1,5 +1,7 @@
 package com.example.kahawahub
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,7 +31,7 @@ private val SupplyOrange = Color(0xFFE65100)
 data class CoffeeSupplyItem(
     val id: String = "",
     val coffeeType: String = "",
-    val quantity: Long = 0L,
+    val quantityKg: Int = 0,
     val status: String = "Pending",
     val dateSubmitted: Long = 0L,
     val cooperativeId: String = ""
@@ -39,6 +42,8 @@ data class CoffeeSupplyItem(
 fun MyCoffeeSupplyPage(
     cooperativeId: String? = null
 ) {
+    val context = LocalContext.current
+
     var selectedCoffeeType by remember { mutableStateOf("") }
     var quantity by remember { mutableStateOf("") }
     var coffeeTypeExpanded by remember { mutableStateOf(false) }
@@ -63,12 +68,15 @@ fun MyCoffeeSupplyPage(
             val listener = db.collection("coffee_supply_submissions")
                 .whereEqualTo("farmer_id", userId)
                 .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e("KahawaSupply", "Error fetching submissions", error)
+                    }
                     if (snapshot != null) {
                         submissions = snapshot.documents.map { doc ->
                             CoffeeSupplyItem(
                                 id = doc.id,
                                 coffeeType = doc.getString("coffee_type") ?: "",
-                                quantity = doc.getLong("quantity") ?: 0L,
+                                quantityKg = (doc.getLong("quantity_kg") ?: doc.getLong("quantity") ?: 0L).toInt(),
                                 status = doc.getString("status") ?: "Pending",
                                 dateSubmitted = doc.getLong("date_submitted") ?: 0L,
                                 cooperativeId = doc.getString("cooperative_id") ?: ""
@@ -198,7 +206,7 @@ fun MyCoffeeSupplyPage(
                 Button(
                     onClick = {
                         val currentUserId = auth.currentUser?.uid
-                        val quantityValue = quantity.toLongOrNull()
+                        val quantityValue = quantity.toIntOrNull()
 
                         if (currentUserId == null) {
                             submissionMessage = "Please log in first"
@@ -213,31 +221,43 @@ fun MyCoffeeSupplyPage(
                             isSubmitting = true
                             submissionMessage = ""
 
-                            db.collection("users")
-                                .document(currentUserId)
-                                .get()
-                                .addOnSuccessListener { userDoc ->
-                                    db.collection("farmers")
-                                        .document(currentUserId)
-                                        .get()
-                                        .addOnSuccessListener { farmerDoc ->
-                                            val activeCooperativeId = farmerDoc.getString("cooperative_id")
-                                                ?: userDoc.getString("cooperative_id")
-                                                ?: cooperativeId
-                                                ?: ""
+                            // 1. Fetch farmer profile to verify membership in a cooperative (required by Firestore rules)
+                            db.collection("farmers").document(currentUserId).get()
+                                .addOnSuccessListener { farmerDoc ->
+                                    val activeCooperativeId = farmerDoc.getString("cooperative_id")
+                                        ?: cooperativeId
+                                        ?: ""
 
-                                            val farmerName = userDoc.getString("name")
-                                                ?: userDoc.getString("full_name")
+                                    if (!farmerDoc.exists() || activeCooperativeId.isBlank()) {
+                                        isSubmitting = false
+                                        submissionMessage = "Please join a cooperative first before submitting coffee supply."
+                                        isSuccessMessage = false
+                                        Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
+                                        return@addOnSuccessListener
+                                    }
+
+                                    // 2. Fetch user details for metadata
+                                    db.collection("users").document(currentUserId).get()
+                                        .addOnCompleteListener { userTask ->
+                                            val userDoc = if (userTask.isSuccessful) userTask.result else null
+                                            val farmerName = userDoc?.getString("name")
+                                                ?: userDoc?.getString("full_name")
+                                                ?: auth.currentUser?.displayName
                                                 ?: "Farmer"
 
+                                            // 3. Build submission payload matching Firestore Security Rules:
+                                            // - farmer_id == auth.uid
+                                            // - cooperative_id == farmers/{uid}.cooperative_id
+                                            // - status == "Pending"
+                                            // - quantity_kg is int && quantity_kg > 0
                                             val submission = hashMapOf(
                                                 "farmer_id" to currentUserId,
                                                 "farmer_name" to farmerName,
                                                 "cooperative_id" to activeCooperativeId,
                                                 "coffee_type" to selectedCoffeeType,
-                                                "quantity" to quantityValue,
-                                                "county" to (userDoc.getString("county") ?: ""),
-                                                "sub_county" to (userDoc.getString("sub_county") ?: ""),
+                                                "quantity_kg" to quantityValue,
+                                                "county" to (userDoc?.getString("county") ?: ""),
+                                                "sub_county" to (userDoc?.getString("sub_county") ?: ""),
                                                 "status" to "Pending",
                                                 "date_submitted" to System.currentTimeMillis()
                                             )
@@ -246,33 +266,29 @@ fun MyCoffeeSupplyPage(
                                                 .add(submission)
                                                 .addOnSuccessListener {
                                                     isSubmitting = false
-                                                    if (activeCooperativeId.isBlank()) {
-                                                        submissionMessage = "Supply submitted successfully (Note: You haven't joined a cooperative yet)"
-                                                    } else {
-                                                        submissionMessage = "Coffee supply submitted successfully!"
-                                                    }
+                                                    submissionMessage = "Coffee supply submitted successfully!"
                                                     isSuccessMessage = true
+                                                    Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
 
-                                                    // Clear input fields on success
+                                                    // Clear inputs on success
                                                     selectedCoffeeType = ""
                                                     quantity = ""
                                                 }
                                                 .addOnFailureListener { error ->
+                                                    Log.e("KahawaSupply", "Failed to write submission to Firestore", error)
                                                     isSubmitting = false
                                                     submissionMessage = "Failed to submit: ${error.localizedMessage}"
                                                     isSuccessMessage = false
+                                                    Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
                                                 }
-                                        }
-                                        .addOnFailureListener { error ->
-                                            isSubmitting = false
-                                            submissionMessage = "Failed to fetch farmer profile: ${error.localizedMessage}"
-                                            isSuccessMessage = false
                                         }
                                 }
                                 .addOnFailureListener { error ->
+                                    Log.e("KahawaSupply", "Failed to fetch farmer profile", error)
                                     isSubmitting = false
-                                    submissionMessage = "Failed to fetch user profile: ${error.localizedMessage}"
+                                    submissionMessage = "Failed to verify membership: ${error.localizedMessage}"
                                     isSuccessMessage = false
+                                    Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
                                 }
                         }
                     },
@@ -367,7 +383,7 @@ fun MyCoffeeSupplyPage(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Quantity: ${item.quantity} kg",
+                                text = "Quantity: ${item.quantityKg} kg",
                                 fontSize = 14.sp,
                                 color = Color.DarkGray
                             )
