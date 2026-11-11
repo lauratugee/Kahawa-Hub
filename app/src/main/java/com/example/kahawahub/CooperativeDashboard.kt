@@ -2079,12 +2079,14 @@ fun CooperativeDashboard(
                                                 "buyer_name" to offerBuyerName,
                                                 "coffee_type" to offerCoffeeType,
                                                 "grade" to offerGrade,
-                                                "offered_price_per_kg" to offerPricePerKg,
-                                                "min_quantity" to offerMinQuantity,
-                                                "max_quantity" to offerMaxQuantity,
+                                                "offered_price_per_kg" to (offerPricePerKg.toDoubleOrNull() ?: 0.0),
+                                                "min_quantity" to (offerMinQuantity.toIntOrNull() ?: 0),
+                                                "max_quantity" to (offerMaxQuantity.toIntOrNull() ?: 0),
+                                                "transport_costs" to (offerTransportCosts.toDoubleOrNull() ?: 0.0),
+                                                "other_costs" to (offerOtherCosts.toDoubleOrNull() ?: 0.0),
                                                 "location" to offerLocation,
                                                 "validity_date" to offerValidityDate,
-                                                "date_added" to System.currentTimeMillis(),
+                                                "date_added" to System.currentTimeMillis()
                                             )
                                             db.collection("market_offers")
                                                 .add(payload)
@@ -2103,6 +2105,8 @@ fun CooperativeDashboard(
                                                     offerPricePerKg = ""
                                                     offerMinQuantity = ""
                                                     offerMaxQuantity = ""
+                                                    offerTransportCosts = ""
+                                                    offerOtherCosts = ""
                                                     offerLocation = ""
                                                     offerValidityDate = ""
                                                 }
