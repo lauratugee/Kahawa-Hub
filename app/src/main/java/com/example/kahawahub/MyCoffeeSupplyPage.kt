@@ -38,6 +38,7 @@ data class CoffeeSupplyItem(
     val rejectionReason: String = ""
 )
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyCoffeeSupplyPage(
@@ -55,6 +56,9 @@ fun MyCoffeeSupplyPage(
 
     var submissions by remember { mutableStateOf<List<CoffeeSupplyItem>>(emptyList()) }
     var isSubmissionsLoading by remember { mutableStateOf(true) }
+
+
+
 
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
