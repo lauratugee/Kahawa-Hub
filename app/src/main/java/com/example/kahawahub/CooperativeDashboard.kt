@@ -22,7 +22,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.foundation.horizontalScroll
 import android.util.Log
+import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -33,6 +35,8 @@ private val CoffeeCream = Color(0xFFF7F3E9)
 private val CoffeeBrown = Color(0xFF684832)
 private val CoffeeGreen = Color(0xFF245640)
 private val CoffeeRed= Color(0xFFD32F2F)
+private val CoffeeBlue=Color (0xFF1976D2)
+private val CoffeeOrange=Color(0xFFE65100)
 
 @Composable
 fun CooperativeDashboard(
@@ -58,6 +62,10 @@ fun CooperativeDashboard(
     var mbuniPrice by remember { mutableStateOf("") }
     var pulpedPrice by remember { mutableStateOf("") }
     var submissions by remember { mutableStateOf<List<Map<String,Any>>>(emptyList()) }
+    var selectedStatusFilter by remember { mutableStateOf("All") }
+    var selectedSubmittedForReview by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var verifiedQuantityInput by remember { mutableStateOf("") }
+    var rejectionReasonInput by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
@@ -401,12 +409,18 @@ fun CooperativeDashboard(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Text(
-                            text = "Members",
+                            text = "Member Supply Submissions",
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold,
                             color = CoffeeBrown
                         )
                         Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "Review, verify and manage coffee supply submissions",
+                            fontSize = 14.sp,
+                            color = Color.DarkGray
+                        )
 
                         OutlinedTextField(
                             value = searchQuery,
@@ -418,9 +432,156 @@ fun CooperativeDashboard(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Text("Members will appear here")
+                        val statusFilters = listOf("All", "Pending","Under Review", "Verified", "Rejected")
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            statusFilters.forEach { status ->
+                                FilterChip(
+                                    selected = selectedStatusFilter == status,
+                                    onClick = { selectedStatusFilter = status },
+                                    label = { Text(status) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = CoffeeGreen,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        val filteredSubmissions = submissions.filter { sub ->
+                            val farmerName=(sub["farmer_name"] as String)?: ""
+                            val farmerId=(sub["farmer_id"] as String)?: ""
+                            val memberMatch=members.find {it["user_id"]==farmerId || it["farmer_id"]==farmerId}
+                            val phone = memberMatch?.get("phone_number") as String ?: ""
+                            val status=(sub["status"] as String)?: "Pending"
+
+                            val matchesSearch = farmerName.contains(searchQuery, ignoreCase = true) ||
+                                    phone.contains(searchQuery, ignoreCase = true)
+                            val matchesStatus = selectedStatusFilter == "All" ||
+                                    status.equals(selectedStatusFilter, ignoreCase = true)
+                            matchesSearch && matchesStatus
+                        }
+
+                        if(filteredSubmissions.isEmpty()){
+                            Card (
+                                modifier=Modifier.fillMaxWidth(),
+                                shape=RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ){
+                                Text(
+                                    text=if(submissions.isEmpty()) "No submissions yet" else "No matching submissions",
+                                    fontSize = 14.sp,
+                                    color = Color.DarkGray,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        } else {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Row(
+                                    modifier= Modifier
+                                        .background(CoffeeBrown)
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Farmer Name", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Text("Contact Number", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Text("Location", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Text("Coffee Type", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Text("Quantity", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Text("Status", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Text("Action", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+
+                                }
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize()
+                                ){
+                                    items(filteredSubmissions){item ->
+                                        val farmerId=item["farmer_id"] as String?: ""
+                                        val memberMatch=members.find {it["user_id"]==farmerId || it["farmer_id"]==farmerId}
+                                        val phone=memberMatch?.get("phone_number") as String?: "N/A"
+                                        val county=item["county"] as String?: ""
+                                        val subCounty=item["sub_county"] as String?: ""
+                                        val locationStr = if (subCounty.isNotBlank() || county.isNotBlank()) {
+                                            "(${subCounty.ifBlank{"N/A"}}, ${county.ifBlank{"N/A"}})"
+                                        } else {
+                                            "N/A"
+                                        }
+                                         val qtyKg=item["quantity_kg"] as Long?: 0L
+                                        val verifiedQuantity=item["verified_quantity_kg"] as Long?: 0L
+                                        val status=item["status"] as String?: "Pending"
+
+                                        val(statusBg, statusFg) = when (status.lowercase()) {
+                                            "verified" -> Color(0xFFC8E6C9) to CoffeeGreen
+                                            "under review" -> Color(0xFFBBDEFB) to CoffeeBlue
+                                            "rejected" -> Color(0xFFFFCDD2) to CoffeeRed
+                                            else -> Color(0xFFFFE0B2) to CoffeeOrange
+                                        }
+                                        Row(
+                                            modifier=Modifier.fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(item["farmer_name"] as String?: "Unknown", modifier=Modifier.width(140.dp), fontWeight = FontWeight.SemiBold, fontSize=14.sp)
+                                            Text(phone, modifier=Modifier.width(140.dp), fontWeight = FontWeight.SemiBold, fontSize=14.sp, color=Color.DarkGray)
+                                            Text(locationStr, modifier=Modifier.width(140.dp), fontWeight = FontWeight.SemiBold, fontSize=14.sp, color=Color.DarkGray)
+                                            Text(item["coffee_type"] as String?: "Unknown", modifier=Modifier.width(140.dp), fontSize=14.sp)
+                                            Column(modifier=Modifier.width(110.dp)) {
+                                                Text("$qtyKg kg", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                                if (status.equals("Verified", ignoreCase = true) && verifiedQuantity > 0) {
+                                                    Text("Verified: ${verifiedQuantity} kg", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = CoffeeGreen)
+                                                }
+                                            }
+                                            Surface(
+                                                shape=RoundedCornerShape(16.dp),
+                                                color=statusBg,
+                                                modifier=Modifier.width(110.dp)
+                                            ) {
+                                                Text(
+                                                    text = status,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 11.sp,
+                                                    color = statusFg,
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 8.dp,
+                                                        vertical = 4.dp
+                                                    )
+                                                )
+                                            }
+                                            Button(
+                                                onClick= {
+                                                    selectedSubmittedForReview = item
+                                                    verifiedQuantityInput = (if (verifiedQuantity > 0) verifiedQuantity else  qtyKg).toString()
+                                                    rejectionReasonInput = item["rejection_reason"] as String ?: ""
+                                                },
+                                                modifier = Modifier.width(110.dp).height(36.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = CoffeeGreen),
+                                                contentPadding = PaddingValues(horizontal = 6.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Review",
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                        }
+                                        HorizontalDivider(color=Color.LightGray.copy(alpha=0.5f))
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+
 
                 2 -> {
                     Column(
@@ -552,8 +713,7 @@ fun CooperativeDashboard(
                         }
                         if (editingAnnouncementId != null) {
                             TextButton(
-                                onClick = {
-                                    announcementTitle = ""
+                                onClick = { announcementTitle = ""
                                     announcementMessage = ""
                                     editingAnnouncementId = null
                                 }
