@@ -38,6 +38,18 @@ private val CoffeeRed= Color(0xFFD32F2F)
 private val CoffeeBlue=Color (0xFF1976D2)
 private val CoffeeOrange=Color(0xFFE65100)
 
+
+data class FactoryBuyerItem(
+    val id: String="",
+    val cooperativeId: String="",
+    val entityName: String="",
+    val entityType: String="Commercial buyer/Factory/Miller",
+    val location: String="",
+    val contactInfo: String="",
+    val acceptedCoffeeTypes: String="",
+    val qualityRequirements: String="",
+    val dateAdded : Long = 0L
+)
 @Composable
 fun CooperativeDashboard(
     selectedTab: Int,
@@ -66,6 +78,16 @@ fun CooperativeDashboard(
     var selectedSubmittedForReview by remember { mutableStateOf<Map<String, Any>?>(null) }
     var verifiedQuantityInput by remember { mutableStateOf("") }
     var rejectionReasonInput by remember { mutableStateOf("") }
+    var factoriesAndBuyers by remember { mutableStateOf<List<FactoryBuyerItem>>(emptyList()) }
+    var isFactoriesLoading by remember { mutableStateOf(true) }
+    var showAddFactoryDialog by remember { mutableStateOf(false) }
+
+    var inputEntityName by remember { mutableStateOf("") }
+    var inputEntityType by remember { mutableStateOf("Commercial Buyer/Factory/Miller") }
+    var inputLocation by remember { mutableStateOf("") }
+    var inputContactInfo by remember { mutableStateOf("") }
+    var inputAcceptedCoffeeTypes by remember { mutableStateOf("") }
+    var inputQualityRequirements by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
@@ -228,6 +250,51 @@ fun CooperativeDashboard(
             }
         }
     }
+    DisposableEffect(cooperativeId) {
+        if (cooperativeId == null) {
+            factoriesAndBuyers = emptyList()
+            isFactoriesLoading = false
+            onDispose { }
+        } else {
+            val listener = db.collection("factory_buyers")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e("Factory/Buyers", "Error fetching factory/buyers: ${error.message}")
+                        isFactoriesLoading = false
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        factoriesAndBuyers = snapshot.documents.map { document ->
+                            FactoryBuyerItem(
+                                id = document.id,
+                                cooperativeId = document.getString("cooperative_id") ?: "",
+                                entityName = document.getString("entity_name") ?: "",
+                                entityType = document.getString("entity_type")
+                                    ?: "Commercial Buyer/Factory/Miller",
+                                location = document.getString("location") ?: "",
+                                contactInfo = document.getString("contact_info") ?: "",
+                                acceptedCoffeeTypes = document.getString("accepted_coffee_types")
+                                    ?: "",
+                                qualityRequirements = document.getString("quality_requirements")
+                                    ?: "",
+                                dateAdded = document.getLong("date_added") ?: 0L
+                            )
+                        }.sortedByDescending { it.dateAdded }
+                    }
+                    isFactoriesLoading = false
+                }
+            onDispose {
+                listener.remove()
+            }
+        }
+    }
+
+
+
+
+
+
 
     Scaffold(
         containerColor = CoffeeCream,
