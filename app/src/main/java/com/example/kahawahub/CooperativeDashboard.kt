@@ -499,13 +499,20 @@ fun CooperativeDashboard(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text("Farmer Name", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp))
-                                        Text("Contact Number", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp))
-                                        Text("Location", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp))
-                                        Text("Coffee Type", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp))
-                                        Text("Quantity", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(80.dp))
-                                        Text("Status", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(85.dp))
-                                        Text("Action", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(75.dp))
+                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
+                                        Text("Contact Number", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp).padding(start = 6.dp))
+                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
+                                        Text("Location", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp).padding(start = 6.dp))
+                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
+                                        Text("Coffee Type", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp).padding(start = 6.dp))
+                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
+                                        Text("Quantity", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(80.dp).padding(start = 6.dp))
+                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
+                                        Text("Status", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(85.dp).padding(start = 6.dp))
+                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
+                                        Text("Action", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(75.dp).padding(start = 6.dp))
                                     }
+                                    HorizontalDivider(color = Color.LightGray)
 
                                     LazyColumn(
                                         modifier = Modifier.fillMaxSize()
@@ -540,19 +547,24 @@ fun CooperativeDashboard(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(item["farmer_name"] as? String ?: "Unknown", modifier = Modifier.width(110.dp), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                                Text(phone, modifier = Modifier.width(100.dp), fontSize = 12.sp, color = Color.DarkGray)
-                                                Text(locationStr, modifier = Modifier.width(110.dp), fontSize = 12.sp, color = Color.DarkGray)
-                                                Text(item["coffee_type"] as? String ?: "", modifier = Modifier.width(100.dp), fontSize = 12.sp)
-                                                Column(modifier = Modifier.width(80.dp)) {
+                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                                                Text(phone, modifier = Modifier.width(100.dp).padding(start = 6.dp), fontSize = 12.sp, color = Color.DarkGray)
+                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                                                Text(locationStr, modifier = Modifier.width(110.dp).padding(start = 6.dp), fontSize = 12.sp, color = Color.DarkGray)
+                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                                                Text(item["coffee_type"] as? String ?: "", modifier = Modifier.width(100.dp).padding(start = 6.dp), fontSize = 12.sp)
+                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                                                Column(modifier = Modifier.width(80.dp).padding(start = 6.dp)) {
                                                     Text("${qtyKg} kg", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                                                     if (status.equals("Verified", ignoreCase = true) && verifiedQuantity > 0) {
                                                         Text("Ver: ${verifiedQuantity} kg", fontSize = 10.sp, color = CoffeeGreen)
                                                     }
                                                 }
+                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
                                                 Surface(
                                                     shape = RoundedCornerShape(16.dp),
                                                     color = statusBg,
-                                                    modifier = Modifier.width(85.dp)
+                                                    modifier = Modifier.width(85.dp).padding(start = 6.dp)
                                                 ) {
                                                     Text(
                                                         text = status,
@@ -562,13 +574,14 @@ fun CooperativeDashboard(
                                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                                     )
                                                 }
+                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
                                                 Button(
                                                     onClick = {
                                                         selectedSubmittedForReview = item
                                                         verifiedQuantityInput = (if (verifiedQuantity > 0) verifiedQuantity else qtyKg).toString()
                                                         rejectionReasonInput = item["rejection_reason"] as? String ?: ""
                                                     },
-                                                    modifier = Modifier.width(75.dp).height(32.dp),
+                                                    modifier = Modifier.width(75.dp).height(32.dp).padding(start = 6.dp),
                                                     colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
                                                     contentPadding = PaddingValues(horizontal = 4.dp)
                                                 ) {
@@ -581,8 +594,182 @@ fun CooperativeDashboard(
                                 }
                             }
                         }
+                        if (selectedSubmittedForReview != null) {
+                            val currentItem = selectedSubmittedForReview!!
+                            val submissionId = currentItem["id"] as? String ?: ""
+                            val declaredQuantity = currentItem["quantity_kg"] as? Long ?: 0L
+
+                            AlertDialog(
+                                onDismissRequest = { selectedSubmittedForReview = null },
+                                title = {
+                                    Text(
+                                        text = "Review Coffee Supply",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoffeeBrown
+                                    )
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "Declared Quantity: $declaredQuantity kg",
+                                            fontSize = 14.sp,
+                                            color = Color.DarkGray
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        Text(
+                                            text = "Verified Quantity (kg)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = CoffeeBrown
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        OutlinedTextField(
+                                            value = verifiedQuantityInput,
+                                            onValueChange = { newValue ->
+                                                if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                                                    verifiedQuantityInput = newValue
+                                                }
+                                            },
+                                            label = { Text("Verified kg") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        Text(
+                                            text = "Rejection Reason (If rejecting)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = CoffeeBrown
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        OutlinedTextField(
+                                            value = rejectionReasonInput,
+                                            onValueChange = { rejectionReasonInput = it },
+                                            label = { Text("Reason for rejection") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            minLines = 2,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                val verifiedQty = verifiedQuantityInput.toLongOrNull() ?: declaredQuantity
+                                                val updateData = mutableMapOf<String, Any>(
+                                                    "status" to "Verified",
+                                                    "verified_quantity_kg" to verifiedQty,
+                                                    "reviewed_by" to userName,
+                                                    "reviewed_at" to System.currentTimeMillis()
+                                                )
+
+                                                db.collection("coffee_supply_submissions")
+                                                    .document(submissionId)
+                                                    .update(updateData)
+                                                    .addOnSuccessListener {
+                                                        Toast.makeText(context, "Submission verified successfully!", Toast.LENGTH_SHORT).show()
+                                                        selectedSubmittedForReview = null
+                                                    }
+                                                    .addOnFailureListener { error ->
+                                                        Toast.makeText(context, "Failed to verify: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                    }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Text("🟢 Verify")
+                                        }
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    val updateData = mutableMapOf<String, Any>(
+                                                        "status" to "Under Review",
+                                                        "reviewed_by" to userName,
+                                                        "reviewed_at" to System.currentTimeMillis()
+                                                    )
+
+                                                    db.collection("coffee_supply_submissions")
+                                                        .document(submissionId)
+                                                        .update(updateData)
+                                                        .addOnSuccessListener {
+                                                            Toast.makeText(context, "Marked as Under Review", Toast.LENGTH_SHORT).show()
+                                                            selectedSubmittedForReview = null
+                                                        }
+                                                        .addOnFailureListener { error ->
+                                                            Toast.makeText(context, "Failed to update: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                        }
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ) {
+                                                Text("🔵 Under Review", fontSize = 12.sp)
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    if (rejectionReasonInput.isBlank()) {
+                                                        Toast.makeText(context, "Please enter a rejection reason first", Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        val updateData = mutableMapOf<String, Any>(
+                                                            "status" to "Rejected",
+                                                            "rejection_reason" to rejectionReasonInput,
+                                                            "reviewed_by" to userName,
+                                                            "reviewed_at" to System.currentTimeMillis()
+                                                        )
+
+                                                        db.collection("coffee_supply_submissions")
+                                                            .document(submissionId)
+                                                            .update(updateData)
+                                                            .addOnSuccessListener {
+                                                                Toast.makeText(context, "Submission rejected", Toast.LENGTH_SHORT).show()
+                                                                selectedSubmittedForReview = null
+                                                            }
+                                                            .addOnFailureListener { error ->
+                                                                Toast.makeText(context, "Failed to reject: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                            }
+                                                    }
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.buttonColors(containerColor = CoffeeRed),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ) {
+                                                Text("🔴 Reject", fontSize = 12.sp)
+                                            }
+                                        }
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(
+                                        onClick = { selectedSubmittedForReview = null }
+                                    ) {
+                                        Text("Cancel", color = Color.Gray)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
+
+
+
+
+
 
 
                 2 -> {
