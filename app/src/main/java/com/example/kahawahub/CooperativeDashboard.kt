@@ -487,94 +487,96 @@ fun CooperativeDashboard(
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                             ) {
-                                Row(
-                                    modifier= Modifier
-                                        .background(CoffeeBrown)
-                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .horizontalScroll(rememberScrollState())
                                 ) {
-                                    Text("Farmer Name", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
-                                    Text("Contact Number", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
-                                    Text("Location", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
-                                    Text("Coffee Type", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
-                                    Text("Quantity", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
-                                    Text("Status", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
-                                    Text("Action", color=Color.White, fontWeight = FontWeight.Bold,modifier=Modifier.width(140.dp))
+                                    Row(
+                                        modifier = Modifier
+                                            .background(CoffeeBrown)
+                                            .padding(horizontal = 10.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Farmer Name", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+                                        Text("Contact Number", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp))
+                                        Text("Location", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp))
+                                        Text("Coffee Type", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp))
+                                        Text("Quantity", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(80.dp))
+                                        Text("Status", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(85.dp))
+                                        Text("Action", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(75.dp))
+                                    }
 
-                                }
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize()
-                                ){
-                                    items(filteredSubmissions){item ->
-                                        val farmerId=item["farmer_id"] as String?: ""
-                                        val memberMatch=members.find {it["user_id"]==farmerId || it["farmer_id"]==farmerId}
-                                        val phone=memberMatch?.get("phone_number") as String?: "N/A"
-                                        val county=item["county"] as String?: ""
-                                        val subCounty=item["sub_county"] as String?: ""
-                                        val locationStr = if (subCounty.isNotBlank() || county.isNotBlank()) {
-                                            "(${subCounty.ifBlank{"N/A"}}, ${county.ifBlank{"N/A"}})"
-                                        } else {
-                                            "N/A"
-                                        }
-                                         val qtyKg=item["quantity_kg"] as Long?: 0L
-                                        val verifiedQuantity=item["verified_quantity_kg"] as Long?: 0L
-                                        val status=item["status"] as String?: "Pending"
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        items(filteredSubmissions) { item ->
+                                            val farmerId = item["farmer_id"] as? String ?: ""
+                                            val memberMatch = members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
+                                            val phone = memberMatch?.get("phone_number") as? String ?: "N/A"
+                                            val county = item["county"] as? String ?: ""
+                                            val subCounty = item["sub_county"] as? String ?: ""
+                                            val locationStr = if (subCounty.isNotBlank() || county.isNotBlank()) {
+                                                "(${subCounty.ifBlank { "N/A" }}, ${county.ifBlank { "N/A" }})"
+                                            } else {
+                                                "N/A"
+                                            }
 
-                                        val(statusBg, statusFg) = when (status.lowercase()) {
-                                            "verified" -> Color(0xFFC8E6C9) to CoffeeGreen
-                                            "under review" -> Color(0xFFBBDEFB) to CoffeeBlue
-                                            "rejected" -> Color(0xFFFFCDD2) to CoffeeRed
-                                            else -> Color(0xFFFFE0B2) to CoffeeOrange
-                                        }
-                                        Row(
-                                            modifier=Modifier.fillMaxWidth()
-                                                .padding(horizontal = 12.dp, vertical = 12.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(item["farmer_name"] as String?: "Unknown", modifier=Modifier.width(140.dp), fontWeight = FontWeight.SemiBold, fontSize=14.sp)
-                                            Text(phone, modifier=Modifier.width(140.dp), fontWeight = FontWeight.SemiBold, fontSize=14.sp, color=Color.DarkGray)
-                                            Text(locationStr, modifier=Modifier.width(140.dp), fontWeight = FontWeight.SemiBold, fontSize=14.sp, color=Color.DarkGray)
-                                            Text(item["coffee_type"] as String?: "Unknown", modifier=Modifier.width(140.dp), fontSize=14.sp)
-                                            Column(modifier=Modifier.width(110.dp)) {
-                                                Text("$qtyKg kg", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                                if (status.equals("Verified", ignoreCase = true) && verifiedQuantity > 0) {
-                                                    Text("Verified: ${verifiedQuantity} kg", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = CoffeeGreen)
+                                            val qtyKg = item["quantity_kg"] as? Long ?: 0L
+                                            val verifiedQuantity = item["verified_quantity_kg"] as? Long ?: 0L
+                                            val status = item["status"] as? String ?: "Pending"
+
+                                            val (statusBg, statusFg) = when (status.lowercase()) {
+                                                "verified" -> Color(0xFFC8E6C9) to CoffeeGreen
+                                                "under review" -> Color(0xFFBBDEFB) to CoffeeBlue
+                                                "rejected" -> Color(0xFFFFCDD2) to CoffeeRed
+                                                else -> Color(0xFFFFE0B2) to CoffeeOrange
+                                            }
+
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(item["farmer_name"] as? String ?: "Unknown", modifier = Modifier.width(110.dp), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                                Text(phone, modifier = Modifier.width(100.dp), fontSize = 12.sp, color = Color.DarkGray)
+                                                Text(locationStr, modifier = Modifier.width(110.dp), fontSize = 12.sp, color = Color.DarkGray)
+                                                Text(item["coffee_type"] as? String ?: "", modifier = Modifier.width(100.dp), fontSize = 12.sp)
+                                                Column(modifier = Modifier.width(80.dp)) {
+                                                    Text("${qtyKg} kg", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                                    if (status.equals("Verified", ignoreCase = true) && verifiedQuantity > 0) {
+                                                        Text("Ver: ${verifiedQuantity} kg", fontSize = 10.sp, color = CoffeeGreen)
+                                                    }
+                                                }
+                                                Surface(
+                                                    shape = RoundedCornerShape(16.dp),
+                                                    color = statusBg,
+                                                    modifier = Modifier.width(85.dp)
+                                                ) {
+                                                    Text(
+                                                        text = status,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 10.sp,
+                                                        color = statusFg,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                                    )
+                                                }
+                                                Button(
+                                                    onClick = {
+                                                        selectedSubmittedForReview = item
+                                                        verifiedQuantityInput = (if (verifiedQuantity > 0) verifiedQuantity else qtyKg).toString()
+                                                        rejectionReasonInput = item["rejection_reason"] as? String ?: ""
+                                                    },
+                                                    modifier = Modifier.width(75.dp).height(32.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                                ) {
+                                                    Text("Review", fontSize = 11.sp)
                                                 }
                                             }
-                                            Surface(
-                                                shape=RoundedCornerShape(16.dp),
-                                                color=statusBg,
-                                                modifier=Modifier.width(110.dp)
-                                            ) {
-                                                Text(
-                                                    text = status,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    fontSize = 11.sp,
-                                                    color = statusFg,
-                                                    modifier = Modifier.padding(
-                                                        horizontal = 8.dp,
-                                                        vertical = 4.dp
-                                                    )
-                                                )
-                                            }
-                                            Button(
-                                                onClick= {
-                                                    selectedSubmittedForReview = item
-                                                    verifiedQuantityInput = (if (verifiedQuantity > 0) verifiedQuantity else  qtyKg).toString()
-                                                    rejectionReasonInput = item["rejection_reason"] as String ?: ""
-                                                },
-                                                modifier = Modifier.width(110.dp).height(36.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = CoffeeGreen),
-                                                contentPadding = PaddingValues(horizontal = 6.dp)
-                                            ) {
-                                                Text(
-                                                    text = "Review",
-                                                    fontSize = 12.sp
-                                                )
-                                            }
+                                            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                                         }
-                                        HorizontalDivider(color=Color.LightGray.copy(alpha=0.5f))
                                     }
                                 }
                             }
