@@ -666,7 +666,9 @@ fun CooperativeDashboard(
                                     ) {
                                         Button(
                                             onClick = {
-                                                val verifiedQty = verifiedQuantityInput.toLongOrNull() ?: declaredQuantity
+                                                val verifiedQty =
+                                                    verifiedQuantityInput.toLongOrNull()
+                                                        ?: declaredQuantity
                                                 val updateData = mutableMapOf<String, Any>(
                                                     "status" to "Verified",
                                                     "verified_quantity_kg" to verifiedQty,
@@ -678,11 +680,19 @@ fun CooperativeDashboard(
                                                     .document(submissionId)
                                                     .update(updateData)
                                                     .addOnSuccessListener {
-                                                        Toast.makeText(context, "Submission verified successfully!", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Submission verified successfully!",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
                                                         selectedSubmittedForReview = null
                                                     }
                                                     .addOnFailureListener { error ->
-                                                        Toast.makeText(context, "Failed to verify: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Failed to verify: ${error.localizedMessage}",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
                                                     }
                                             },
                                             modifier = Modifier.fillMaxWidth(),
@@ -708,11 +718,19 @@ fun CooperativeDashboard(
                                                         .document(submissionId)
                                                         .update(updateData)
                                                         .addOnSuccessListener {
-                                                            Toast.makeText(context, "Marked as Under Review", Toast.LENGTH_SHORT).show()
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Marked as Under Review",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
                                                             selectedSubmittedForReview = null
                                                         }
                                                         .addOnFailureListener { error ->
-                                                            Toast.makeText(context, "Failed to update: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Failed to update: ${error.localizedMessage}",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
                                                         }
                                                 },
                                                 modifier = Modifier.weight(1f),
@@ -724,7 +742,11 @@ fun CooperativeDashboard(
                                             Button(
                                                 onClick = {
                                                     if (rejectionReasonInput.isBlank()) {
-                                                        Toast.makeText(context, "Please enter a rejection reason first", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Please enter a rejection reason first",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
                                                     } else {
                                                         val updateData = mutableMapOf<String, Any>(
                                                             "status" to "Rejected",
@@ -737,11 +759,19 @@ fun CooperativeDashboard(
                                                             .document(submissionId)
                                                             .update(updateData)
                                                             .addOnSuccessListener {
-                                                                Toast.makeText(context, "Submission rejected", Toast.LENGTH_SHORT).show()
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Submission rejected",
+                                                                    Toast.LENGTH_SHORT
+                                                                ).show()
                                                                 selectedSubmittedForReview = null
                                                             }
                                                             .addOnFailureListener { error ->
-                                                                Toast.makeText(context, "Failed to reject: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    "Failed to reject: ${error.localizedMessage}",
+                                                                    Toast.LENGTH_LONG
+                                                                ).show()
                                                             }
                                                     }
                                                 },
@@ -752,23 +782,24 @@ fun CooperativeDashboard(
                                                 Text("🔴 Reject", fontSize = 12.sp)
                                             }
                                         }
-                                    }
-                                },
-                                dismissButton = {
-                                    TextButton(
-                                        onClick = { selectedSubmittedForReview = null }
-                                    ) {
-                                        Text("Cancel", color = Color.Gray)
+                                        TextButton(
+                                            onClick = {
+                                                selectedSubmittedForReview = null
+                                            },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = "Cancel",
+                                                color = Color.Gray,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
                                     }
                                 }
                             )
                         }
                     }
                 }
-
-
-
-
 
 
 
