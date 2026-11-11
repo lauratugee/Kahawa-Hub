@@ -90,7 +90,7 @@ fun CooperativeDashboard(
     var cherriesPrice by remember { mutableStateOf("") }
     var mbuniPrice by remember { mutableStateOf("") }
     var pulpedPrice by remember { mutableStateOf("") }
-    var submissions by remember { mutableStateOf<List<Map<String,Any>>>(emptyList()) }
+    var submissions by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var selectedStatusFilter by remember { mutableStateOf("All") }
     var selectedSubmittedForReview by remember { mutableStateOf<Map<String, Any>?>(null) }
     var verifiedQuantityInput by remember { mutableStateOf("") }
@@ -109,6 +109,7 @@ fun CooperativeDashboard(
     var marketOffers by remember { mutableStateOf<List<MarketOfferItem>>(emptyList()) }
     var isOffersLoading by remember { mutableStateOf(true) }
     var showAddOfferDialog by remember { mutableStateOf(false) }
+    var marketManagementTab by remember { mutableStateOf(0) }
 
     var offerBuyerName by remember { mutableStateOf("") }
     var offerCoffeeType by remember { mutableStateOf("") }
@@ -120,6 +121,7 @@ fun CooperativeDashboard(
     var offerOtherCosts by remember { mutableStateOf("") }
     var offerLocation by remember { mutableStateOf("") }
     var offerValidityDate by remember { mutableStateOf("") }
+
 
 
     LaunchedEffect(Unit) {
@@ -322,6 +324,48 @@ fun CooperativeDashboard(
             }
         }
     }
+    DisposableEffect(cooperativeId) {
+        if (cooperativeId == null) {
+            marketOffers = emptyList()
+            isOffersLoading = false
+            onDispose { }
+        } else {
+            val listener = db.collection("market_offers")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e("MarketOffers", "Error fetching market offers: ${error.message}")
+                        isOffersLoading = false
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        marketOffers = snapshot.documents.map { document ->
+                            MarketOfferItem(
+                                id = document.id,
+                                cooperativeId = document.getString("cooperative_id") ?: "",
+                                buyerName = document.getString("buyer_name") ?: "",
+                                coffeeType = document.getString("coffee_type") ?: "",
+                                grade = document.getString("grade") ?: "",
+                                offeredPricePerKg = (document.getDouble("offered_price_per_kg")
+                                    ?: 0.0),
+                                minQuantity = (document.getLong("min_quantity") ?: 0).toInt(),
+                                maxQuantity = (document.getLong("max_quantity") ?: 0).toInt(),
+                                transportCosts = (document.getDouble("transport_costs") ?: 0.0),
+                                otherCosts = (document.getDouble("other_costs") ?: 0.0),
+                                location = document.getString("location") ?: "",
+                                validityDat = document.getString("validity_date") ?: "",
+                                dateAdded = document.getLong("date_added") ?: 0L,
+                                addedBy = document.getString("added_by") ?: ""
+                            )
+                        }.sortedByDescending { it.dateAdded }
+                    }
+                    isOffersLoading = false
+                }
+            onDispose {
+                listener.remove()
+            }
+        }
+    }
 
 
     Scaffold(
@@ -338,7 +382,7 @@ fun CooperativeDashboard(
                     "Market",
                     "Profile"
                 )
-                val symbols = listOf("🏠", "👥", "📃", "💰","💹", "👤")
+                val symbols = listOf("🏠", "👥", "📃", "💰", "💹", "👤")
 
                 tabs.forEachIndexed { index, title ->
                     NavigationBarItem(
@@ -527,7 +571,8 @@ fun CooperativeDashboard(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        val statusFilters = listOf("All", "Pending","Under Review", "Verified", "Rejected")
+                        val statusFilters =
+                            listOf("All", "Pending", "Under Review", "Verified", "Rejected")
 
                         Row(
                             modifier = Modifier.fillMaxWidth()
@@ -549,27 +594,29 @@ fun CooperativeDashboard(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         val filteredSubmissions = submissions.filter { sub ->
-                            val farmerName=(sub["farmer_name"] as String)?: ""
-                            val farmerId=(sub["farmer_id"] as String)?: ""
-                            val memberMatch=members.find {it["user_id"]==farmerId || it["farmer_id"]==farmerId}
+                            val farmerName = (sub["farmer_name"] as String) ?: ""
+                            val farmerId = (sub["farmer_id"] as String) ?: ""
+                            val memberMatch =
+                                members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
                             val phone = memberMatch?.get("phone_number") as String ?: ""
-                            val status=(sub["status"] as String)?: "Pending"
+                            val status = (sub["status"] as String) ?: "Pending"
 
-                            val matchesSearch = farmerName.contains(searchQuery, ignoreCase = true) ||
-                                    phone.contains(searchQuery, ignoreCase = true)
+                            val matchesSearch =
+                                farmerName.contains(searchQuery, ignoreCase = true) ||
+                                        phone.contains(searchQuery, ignoreCase = true)
                             val matchesStatus = selectedStatusFilter == "All" ||
                                     status.equals(selectedStatusFilter, ignoreCase = true)
                             matchesSearch && matchesStatus
                         }
 
-                        if(filteredSubmissions.isEmpty()){
-                            Card (
-                                modifier=Modifier.fillMaxWidth(),
-                                shape=RoundedCornerShape(12.dp),
+                        if (filteredSubmissions.isEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
-                            ){
+                            ) {
                                 Text(
-                                    text=if(submissions.isEmpty()) "No submissions yet" else "No matching submissions",
+                                    text = if (submissions.isEmpty()) "No submissions yet" else "No matching submissions",
                                     fontSize = 14.sp,
                                     color = Color.DarkGray,
                                     modifier = Modifier.padding(16.dp)
@@ -593,19 +640,79 @@ fun CooperativeDashboard(
                                             .padding(horizontal = 10.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text("Farmer Name", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp))
-                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
-                                        Text("Contact Number", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp).padding(start = 6.dp))
-                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
-                                        Text("Location", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(110.dp).padding(start = 6.dp))
-                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
-                                        Text("Coffee Type", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(100.dp).padding(start = 6.dp))
-                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
-                                        Text("Quantity", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(80.dp).padding(start = 6.dp))
-                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
-                                        Text("Status", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(85.dp).padding(start = 6.dp))
-                                        VerticalDivider(modifier = Modifier.height(20.dp), color = Color.White.copy(alpha = 0.3f))
-                                        Text("Action", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.width(75.dp).padding(start = 6.dp))
+                                        Text(
+                                            "Farmer Name",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(110.dp)
+                                        )
+                                        VerticalDivider(
+                                            modifier = Modifier.height(20.dp),
+                                            color = Color.White.copy(alpha = 0.3f)
+                                        )
+                                        Text(
+                                            "Contact Number",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(100.dp).padding(start = 6.dp)
+                                        )
+                                        VerticalDivider(
+                                            modifier = Modifier.height(20.dp),
+                                            color = Color.White.copy(alpha = 0.3f)
+                                        )
+                                        Text(
+                                            "Location",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(110.dp).padding(start = 6.dp)
+                                        )
+                                        VerticalDivider(
+                                            modifier = Modifier.height(20.dp),
+                                            color = Color.White.copy(alpha = 0.3f)
+                                        )
+                                        Text(
+                                            "Coffee Type",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(100.dp).padding(start = 6.dp)
+                                        )
+                                        VerticalDivider(
+                                            modifier = Modifier.height(20.dp),
+                                            color = Color.White.copy(alpha = 0.3f)
+                                        )
+                                        Text(
+                                            "Quantity",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(80.dp).padding(start = 6.dp)
+                                        )
+                                        VerticalDivider(
+                                            modifier = Modifier.height(20.dp),
+                                            color = Color.White.copy(alpha = 0.3f)
+                                        )
+                                        Text(
+                                            "Status",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(85.dp).padding(start = 6.dp)
+                                        )
+                                        VerticalDivider(
+                                            modifier = Modifier.height(20.dp),
+                                            color = Color.White.copy(alpha = 0.3f)
+                                        )
+                                        Text(
+                                            "Action",
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.width(75.dp).padding(start = 6.dp)
+                                        )
                                     }
                                     HorizontalDivider(color = Color.LightGray)
 
@@ -614,18 +721,22 @@ fun CooperativeDashboard(
                                     ) {
                                         items(filteredSubmissions) { item ->
                                             val farmerId = item["farmer_id"] as? String ?: ""
-                                            val memberMatch = members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
-                                            val phone = memberMatch?.get("phone_number") as? String ?: "N/A"
+                                            val memberMatch =
+                                                members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
+                                            val phone =
+                                                memberMatch?.get("phone_number") as? String ?: "N/A"
                                             val county = item["county"] as? String ?: ""
                                             val subCounty = item["sub_county"] as? String ?: ""
-                                            val locationStr = if (subCounty.isNotBlank() || county.isNotBlank()) {
-                                                "(${subCounty.ifBlank { "N/A" }}, ${county.ifBlank { "N/A" }})"
-                                            } else {
-                                                "N/A"
-                                            }
+                                            val locationStr =
+                                                if (subCounty.isNotBlank() || county.isNotBlank()) {
+                                                    "(${subCounty.ifBlank { "N/A" }}, ${county.ifBlank { "N/A" }})"
+                                                } else {
+                                                    "N/A"
+                                                }
 
                                             val qtyKg = item["quantity_kg"] as? Long ?: 0L
-                                            val verifiedQuantity = item["verified_quantity_kg"] as? Long ?: 0L
+                                            val verifiedQuantity =
+                                                item["verified_quantity_kg"] as? Long ?: 0L
                                             val status = item["status"] as? String ?: "Pending"
 
                                             val (statusBg, statusFg) = when (status.lowercase()) {
@@ -641,43 +752,108 @@ fun CooperativeDashboard(
                                                     .padding(horizontal = 10.dp, vertical = 10.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                Text(item["farmer_name"] as? String ?: "Unknown", modifier = Modifier.width(110.dp), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
-                                                Text(phone, modifier = Modifier.width(100.dp).padding(start = 6.dp), fontSize = 12.sp, color = Color.DarkGray)
-                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
-                                                Text(locationStr, modifier = Modifier.width(110.dp).padding(start = 6.dp), fontSize = 12.sp, color = Color.DarkGray)
-                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
-                                                Text(item["coffee_type"] as? String ?: "", modifier = Modifier.width(100.dp).padding(start = 6.dp), fontSize = 12.sp)
-                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
-                                                Column(modifier = Modifier.width(80.dp).padding(start = 6.dp)) {
-                                                    Text("${qtyKg} kg", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                                                    if (status.equals("Verified", ignoreCase = true) && verifiedQuantity > 0) {
-                                                        Text("Ver: ${verifiedQuantity} kg", fontSize = 10.sp, color = CoffeeGreen)
+                                                Text(
+                                                    item["farmer_name"] as? String ?: "Unknown",
+                                                    modifier = Modifier.width(110.dp),
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 13.sp
+                                                )
+                                                VerticalDivider(
+                                                    modifier = Modifier.height(28.dp),
+                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                )
+                                                Text(
+                                                    phone,
+                                                    modifier = Modifier.width(100.dp)
+                                                        .padding(start = 6.dp),
+                                                    fontSize = 12.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                VerticalDivider(
+                                                    modifier = Modifier.height(28.dp),
+                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                )
+                                                Text(
+                                                    locationStr,
+                                                    modifier = Modifier.width(110.dp)
+                                                        .padding(start = 6.dp),
+                                                    fontSize = 12.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                VerticalDivider(
+                                                    modifier = Modifier.height(28.dp),
+                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                )
+                                                Text(
+                                                    item["coffee_type"] as? String ?: "",
+                                                    modifier = Modifier.width(100.dp)
+                                                        .padding(start = 6.dp),
+                                                    fontSize = 12.sp
+                                                )
+                                                VerticalDivider(
+                                                    modifier = Modifier.height(28.dp),
+                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                )
+                                                Column(
+                                                    modifier = Modifier.width(80.dp)
+                                                        .padding(start = 6.dp)
+                                                ) {
+                                                    Text(
+                                                        "${qtyKg} kg",
+                                                        fontWeight = FontWeight.SemiBold,
+                                                        fontSize = 12.sp
+                                                    )
+                                                    if (status.equals(
+                                                            "Verified",
+                                                            ignoreCase = true
+                                                        ) && verifiedQuantity > 0
+                                                    ) {
+                                                        Text(
+                                                            "Ver: ${verifiedQuantity} kg",
+                                                            fontSize = 10.sp,
+                                                            color = CoffeeGreen
+                                                        )
                                                     }
                                                 }
-                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                                                VerticalDivider(
+                                                    modifier = Modifier.height(28.dp),
+                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                )
                                                 Surface(
                                                     shape = RoundedCornerShape(16.dp),
                                                     color = statusBg,
-                                                    modifier = Modifier.width(85.dp).padding(start = 6.dp)
+                                                    modifier = Modifier.width(85.dp)
+                                                        .padding(start = 6.dp)
                                                 ) {
                                                     Text(
                                                         text = status,
                                                         fontWeight = FontWeight.Bold,
                                                         fontSize = 10.sp,
                                                         color = statusFg,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                                        modifier = Modifier.padding(
+                                                            horizontal = 6.dp,
+                                                            vertical = 4.dp
+                                                        )
                                                     )
                                                 }
-                                                VerticalDivider(modifier = Modifier.height(28.dp), color = Color.LightGray.copy(alpha = 0.5f))
+                                                VerticalDivider(
+                                                    modifier = Modifier.height(28.dp),
+                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                )
                                                 Button(
                                                     onClick = {
                                                         selectedSubmittedForReview = item
-                                                        verifiedQuantityInput = (if (verifiedQuantity > 0) verifiedQuantity else qtyKg).toString()
-                                                        rejectionReasonInput = item["rejection_reason"] as? String ?: ""
+                                                        verifiedQuantityInput =
+                                                            (if (verifiedQuantity > 0) verifiedQuantity else qtyKg).toString()
+                                                        rejectionReasonInput =
+                                                            item["rejection_reason"] as? String
+                                                                ?: ""
                                                     },
-                                                    modifier = Modifier.width(75.dp).height(32.dp).padding(start = 6.dp),
-                                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                                    modifier = Modifier.width(75.dp).height(32.dp)
+                                                        .padding(start = 6.dp),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = CoffeeGreen
+                                                    ),
                                                     contentPadding = PaddingValues(horizontal = 4.dp)
                                                 ) {
                                                     Text("Review", fontSize = 11.sp)
@@ -897,7 +1073,6 @@ fun CooperativeDashboard(
                 }
 
 
-
                 2 -> {
                     Column(
                         modifier = Modifier.fillMaxSize()
@@ -1028,7 +1203,8 @@ fun CooperativeDashboard(
                         }
                         if (editingAnnouncementId != null) {
                             TextButton(
-                                onClick = { announcementTitle = ""
+                                onClick = {
+                                    announcementTitle = ""
                                     announcementMessage = ""
                                     editingAnnouncementId = null
                                 }
@@ -1366,10 +1542,11 @@ fun CooperativeDashboard(
 
                     }
                 }
-                4 ->{
+
+                4 -> {
                     Column(
-                        modifier=Modifier.fillMaxSize()
-                    ){
+                        modifier = Modifier.fillMaxSize()
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1377,7 +1554,7 @@ fun CooperativeDashboard(
                         ) {
                             Column {
                                 Text(
-                                    text = "Factories and Buyers",
+                                    text = "Market Management",
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = CoffeeBrown
@@ -1391,253 +1568,580 @@ fun CooperativeDashboard(
                             }
                             Button(
                                 onClick = {
-                                    showAddFactoryDialog = true
+                                    if (marketManagementTab == 0)
+                                        showAddFactoryDialog = true
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = CoffeeGreen
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Add New")
+                                Text(if (marketManagementTab == 0) "Add Factory" else "Add Offer")
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        if (isFactoriesLoading) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().weight(1f),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(color = CoffeeGreen)
-                            }
-                        } else if (factoriesAndBuyers.isEmpty()) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth().weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
-                            ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = marketManagementTab == 0,
+                                onClick = {
+                                    marketManagementTab = 0
+                                },
+                                label = { Text("Factories and Buyers") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = CoffeeGreen,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                            FilterChip(
+                                selected = marketManagementTab == 1,
+                                onClick = {
+                                    marketManagementTab = 1
+                                },
+                                label = { Text("Offers (${marketOffers.size})") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = CoffeeGreen,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (marketManagementTab == 0) {
+                            if (isFactoriesLoading) {
                                 Box(
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = "No factories/buyers found",
-                                        fontSize = 14.sp,
-                                        color = Color.DarkGray
-                                    )
+                                    CircularProgressIndicator(color = CoffeeGreen)
+                                }
+                            } else if (factoriesAndBuyers.isEmpty()) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No factories/buyers found",
+                                            fontSize = 14.sp,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(factoriesAndBuyers) { factory ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(16.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = factory.entityName,
+                                                        fontSize = 18.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = CoffeeBrown
+                                                    )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        color = if (factory.entityType.contains(
+                                                                "Factory",
+                                                                ignoreCase = true
+                                                            )
+                                                        ) Color(0xFFFFF3E0) else Color(0xFFE8F5E9)
+                                                    ) {
+                                                        Text(
+                                                            text = factory.entityType,
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = if (factory.entityType.contains(
+                                                                    "Factory",
+                                                                    ignoreCase = true
+                                                                )
+                                                            ) CoffeeOrange else CoffeeGreen,
+                                                            modifier = Modifier.padding(
+                                                                horizontal = 8.dp,
+                                                                vertical = 4.dp
+                                                            )
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Text(
+                                                    text = "Location: ${factory.location.ifBlank { "N/A" }} | Contact: ${factory.contactInfo.ifBlank { "N/A" }}",
+                                                    fontSize = 14.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Accepted Coffee: ${factory.acceptedCoffeeTypes.ifBlank { "All Types" }}",
+                                                    fontSize = 13.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Requirements: ${factory.qualityRequirements.ifBlank { "Standard Quality" }}",
+                                                    fontSize = 13.sp,
+                                                    color = Color.Gray
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         } else {
-                            LazyColumn(
-                                modifier = Modifier.fillMaxWidth().weight(1f),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                items(factoriesAndBuyers) { factory ->
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                            if (isOffersLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = CoffeeGreen)
+                                }
+                            } else if (marketOffers.isEmpty()) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
                                     ) {
-                                        Column(
-                                            modifier = Modifier.fillMaxWidth().padding(16.dp)
+                                        Text(
+                                            text = "No offers found",
+                                            fontSize = 14.sp,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(marketOffers) { offer ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                         ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(16.dp)
                                             ) {
-                                                Text(
-                                                    text = factory.entityName,
-                                                    fontSize = 18.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = CoffeeBrown
-                                                )
-                                                Surface(
-                                                    shape = RoundedCornerShape(12.dp),
-                                                    color = if (factory.entityType.contains("Factory", ignoreCase = true)) Color(0xFFFFF3E0) else Color(0xFFE8F5E9)
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Text(
-                                                        text = factory.entityType,
-                                                        fontSize = 11.sp,
+                                                        text = offer.buyerName,
+                                                        fontSize = 18.sp,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = if (factory.entityType.contains("Factory", ignoreCase = true)) CoffeeOrange else CoffeeGreen,
-                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                        color = CoffeeBrown
                                                     )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        color = Color(0xFFE8F5E9)
+                                                    ) {
+                                                        Text(
+                                                            text = "KES ${offer.offeredPricePerKg} / kg",
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = CoffeeGreen,
+                                                            modifier = Modifier.padding(
+                                                                horizontal = 8.dp,
+                                                                vertical = 4.dp
+                                                            )
+                                                        )
+                                                    }
                                                 }
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                Text(
+                                                    text = "Coffee: ${offer.coffeeType} (${offer.grade})",
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Quantity Range: ${offer.minQuantity} kg - ${offer.maxQuantity} kg | Location: ${offer.location.ifBlank { "N/A" }}",
+                                                    fontSize = 14.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Transport Cost: KES ${offer.transportCosts} | Other Costs: KES ${offer.otherCosts}",
+                                                    fontSize = 14.sp,
+                                                    color = Color.DarkGray
+                                                )
                                             }
-                                            Spacer(modifier = Modifier.height(8.dp))
-                                            Text(
-                                                text = "Location: ${factory.location.ifBlank { "N/A" }} | Contact: ${factory.contactInfo.ifBlank { "N/A" }}",
-                                                fontSize = 14.sp,
-                                                color = Color.DarkGray
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Accepted Coffee: ${factory.acceptedCoffeeTypes.ifBlank { "All Types" }}",
-                                                fontSize = 13.sp,
-                                                color = Color.DarkGray
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Requirements: ${factory.qualityRequirements.ifBlank { "Standard Quality" }}",
-                                                fontSize = 13.sp,
-                                                color = Color.Gray
-                                            )
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    if (showAddFactoryDialog) {
-                        AlertDialog(
-                            onDismissRequest = { showAddFactoryDialog = false },
-                            title = {
-                                Text(
-                                    text = "Add New Factory or Buyer",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = CoffeeBrown
-                                )
-                            },
-                            text = {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth()
-                                        .verticalScroll(rememberScrollState()),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = inputEntityName,
-                                        onValueChange = { inputEntityName = it },
-                                        label = { Text("Name") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp)
+
+
+
+                        if (showAddFactoryDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showAddFactoryDialog = false },
+                                title = {
+                                    Text(
+                                        text = "Add New Factory or Buyer",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoffeeBrown
                                     )
-                                    OutlinedTextField(
-                                        value = inputEntityType,
-                                        onValueChange = { inputEntityType = it },
-                                        label = { Text("Type (Commercial Buyer / Factory)") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                    OutlinedTextField(
-                                        value = inputLocation,
-                                        onValueChange = { inputLocation = it },
-                                        label = { Text("Location") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                    OutlinedTextField(
-                                        value = inputContactInfo,
-                                        onValueChange = { inputContactInfo = it },
-                                        label = { Text("Contact Info") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                    OutlinedTextField(
-                                        value = inputAcceptedCoffeeTypes,
-                                        onValueChange = { inputAcceptedCoffeeTypes = it },
-                                        label = { Text("Accepted Coffee Types") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                    OutlinedTextField(
-                                        value = inputQualityRequirements,
-                                        onValueChange = { inputQualityRequirements = it },
-                                        label = { Text("Quality Requirements") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        minLines = 2,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                }
-                            },
-                            confirmButton = {
-                                Button(
-                                    onClick = {
-                                        if (cooperativeId == null) {
-                                            Toast.makeText(
-                                                context,
-                                                "Cooperative ID missing",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                            return@Button
-                                        }
-                                        if (inputEntityName.isBlank()) {
-                                            Toast.makeText(
-                                                context,
-                                                "Please enter entity name",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                            return@Button
-                                        }
-                                        val payload = hashMapOf(
-                                            "cooperative_id" to cooperativeId,
-                                            "entity_name" to inputEntityName,
-                                            "entity_type" to inputEntityType,
-                                            "location" to inputLocation,
-                                            "contact_info" to inputContactInfo,
-                                            "accepted_coffee_types" to inputAcceptedCoffeeTypes,
-                                            "quality_requirements" to inputQualityRequirements,
-                                            "date_added" to System.currentTimeMillis(),
-                                            "added_by" to userName
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .verticalScroll(rememberScrollState()),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = inputEntityName,
+                                            onValueChange = { inputEntityName = it },
+                                            label = { Text("Name") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
                                         )
-                                        db.collection("factories_and_buyers")
-                                            .add(payload)
-                                            .addOnSuccessListener {
+                                        OutlinedTextField(
+                                            value = inputEntityType,
+                                            onValueChange = { inputEntityType = it },
+                                            label = { Text("Type (Commercial Buyer / Factory)") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = inputLocation,
+                                            onValueChange = { inputLocation = it },
+                                            label = { Text("Location") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = inputContactInfo,
+                                            onValueChange = { inputContactInfo = it },
+                                            label = { Text("Contact Info") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = inputAcceptedCoffeeTypes,
+                                            onValueChange = { inputAcceptedCoffeeTypes = it },
+                                            label = { Text("Accepted Coffee Types") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = inputQualityRequirements,
+                                            onValueChange = { inputQualityRequirements = it },
+                                            label = { Text("Quality Requirements") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            minLines = 2,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            if (cooperativeId == null) {
                                                 Toast.makeText(
                                                     context,
-                                                    "Factory/Buyer added successfully",
+                                                    "Cooperative ID missing",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
-                                                showAddFactoryDialog = false
-
-                                                inputEntityName = ""
-                                                inputLocation = ""
-                                                inputContactInfo = ""
-                                                inputAcceptedCoffeeTypes = ""
-                                                inputQualityRequirements = ""
+                                                return@Button
                                             }
-                                            .addOnFailureListener { error ->
+                                            if (inputEntityName.isBlank()) {
                                                 Toast.makeText(
                                                     context,
-                                                    "Failed: ${error.localizedMessage}",
-                                                    Toast.LENGTH_LONG
+                                                    "Please enter entity name",
+                                                    Toast.LENGTH_SHORT
                                                 ).show()
+                                                return@Button
                                             }
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
-                                    shape = RoundedCornerShape(10.dp)
-                                ) {
-                                    Text("Save")
+                                            val payload = hashMapOf(
+                                                "cooperative_id" to cooperativeId,
+                                                "entity_name" to inputEntityName,
+                                                "entity_type" to inputEntityType,
+                                                "location" to inputLocation,
+                                                "contact_info" to inputContactInfo,
+                                                "accepted_coffee_types" to inputAcceptedCoffeeTypes,
+                                                "quality_requirements" to inputQualityRequirements,
+                                                "date_added" to System.currentTimeMillis(),
+                                                "added_by" to userName
+                                            )
+                                            db.collection("factories_and_buyers")
+                                                .add(payload)
+                                                .addOnSuccessListener {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Factory/Buyer added successfully",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    showAddFactoryDialog = false
+
+                                                    inputEntityName = ""
+                                                    inputLocation = ""
+                                                    inputContactInfo = ""
+                                                    inputAcceptedCoffeeTypes = ""
+                                                    inputQualityRequirements = ""
+                                                }
+                                                .addOnFailureListener { error ->
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Failed: ${error.localizedMessage}",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text("Save")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(
+                                        onClick = { showAddFactoryDialog = false }
+                                    ) {
+                                        Text("Cancel", color = Color.Gray)
+                                    }
                                 }
-                            },
-                            dismissButton = {
-                                TextButton(
-                                    onClick = { showAddFactoryDialog = false }
-                                ) {
-                                    Text("Cancel", color = Color.Gray)
+                            )
+                        }
+                        if (showAddOfferDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showAddOfferDialog = false },
+                                title = {
+                                    Text(
+                                        text = "Add New Offer",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoffeeBrown
+                                    )
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .verticalScroll(rememberScrollState()),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = offerBuyerName,
+                                            onValueChange = { offerBuyerName = it },
+                                            label = { Text("Buyer/Mill Name") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = offerCoffeeType,
+                                            onValueChange = { offerCoffeeType = it },
+                                            label = { Text("Coffee Type") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = offerGrade,
+                                            onValueChange = { offerGrade = it },
+                                            label = { Text("Grade/ Quality") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = offerPricePerKg,
+                                            onValueChange = { offerPricePerKg = it },
+                                            label = { Text("Offered price per kg (KES)") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            OutlinedTextField(
+                                                value = offerMinQuantity,
+                                                onValueChange = { offerMinQuantity = it },
+                                                label = { Text("Min Quantity") },
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = offerMaxQuantity,
+                                                onValueChange = { offerMaxQuantity = it },
+                                                label = { Text("Max Quantity") },
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            OutlinedTextField(
+                                                value = offerTransportCosts,
+                                                onValueChange = {
+                                                    if (it.isEmpty() || it.all { ch -> ch.isDigit() || ch == '.' }) offerTransportCosts =
+                                                        it
+                                                },
+                                                label = { Text("Transport") },
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = offerOtherCosts,
+                                                onValueChange = {
+                                                    if (it.isEmpty() || it.all { ch -> ch.isDigit() || ch == '.' }) offerOtherCosts =
+                                                        it
+                                                },
+                                                label = { Text("Other Costs") },
+                                                modifier = Modifier.weight(1f),
+                                                singleLine = true,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                        }
+                                        OutlinedTextField(
+                                            value = offerLocation,
+                                            onValueChange = { offerLocation = it },
+                                            label = { Text("Location") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = offerValidityDate,
+                                            onValueChange = { offerValidityDate = it },
+                                            label = { Text("Validity") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            singleLine = true,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            if (cooperativeId == null) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Cooperative ID missing",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                return@Button
+                                            }
+                                            if (offerBuyerName.isBlank() || offerPricePerKg.isBlank()) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Please fill in all fields",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                return@Button
+                                            }
+                                            val payload = hashMapOf(
+                                                "cooperative_id" to cooperativeId,
+                                                "buyer_name" to offerBuyerName,
+                                                "coffee_type" to offerCoffeeType,
+                                                "grade" to offerGrade,
+                                                "offered_price_per_kg" to offerPricePerKg,
+                                                "min_quantity" to offerMinQuantity,
+                                                "max_quantity" to offerMaxQuantity,
+                                                "location" to offerLocation,
+                                                "validity_date" to offerValidityDate,
+                                                "date_added" to System.currentTimeMillis(),
+                                            )
+                                            db.collection("market_offers")
+                                                .add(payload)
+                                                .addOnSuccessListener {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Offer added successfully",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+
+                                                    showAddOfferDialog = false
+
+                                                    offerBuyerName = ""
+                                                    offerCoffeeType = ""
+                                                    offerGrade = ""
+                                                    offerPricePerKg = ""
+                                                    offerMinQuantity = ""
+                                                    offerMaxQuantity = ""
+                                                    offerLocation = ""
+                                                    offerValidityDate = ""
+                                                }
+                                                .addOnFailureListener { error ->
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Failed: ${error.localizedMessage}",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text("Save")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(
+                                        onClick = { showAddOfferDialog = false }
+                                    ) {
+                                        Text("Cancel")
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
 
                 5 -> {
-                    CooperativeProfilePage(
-                        onLogoutClick = onLogoutClick
-                    )
+                        CooperativeProfilePage(
+                            onLogoutClick = onLogoutClick
+                        )
+                    }
                 }
             }
         }
     }
-}
-
+    
 
 
 
