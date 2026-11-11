@@ -291,11 +291,6 @@ fun CooperativeDashboard(
     }
 
 
-
-
-
-
-
     Scaffold(
         containerColor = CoffeeCream,
         bottomBar = {
@@ -1342,22 +1337,263 @@ fun CooperativeDashboard(
                     Column(
                         modifier=Modifier.fillMaxSize()
                     ){
-                        Text(
-                            text = "Market Management",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = CoffeeBrown
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Factories and Buyers",
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoffeeBrown
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Manage factories and buyers",
+                                    fontSize = 14.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    showAddFactoryDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CoffeeGreen
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text("Add New")
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text="Manage factories, buyers, market offers and linkage requests",
-                            fontSize = 14.sp,
-                            color = Color.DarkGray
+                        if (isFactoriesLoading) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = CoffeeGreen)
+                            }
+                        } else if (factoriesAndBuyers.isEmpty()) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "No factories/buyers found",
+                                        fontSize = 14.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(factoriesAndBuyers) { factory ->
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.fillMaxWidth().padding(16.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = factory.entityName,
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = CoffeeBrown
+                                                )
+                                                Surface(
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = if (factory.entityType.contains("Factory", ignoreCase = true)) Color(0xFFFFF3E0) else Color(0xFFE8F5E9)
+                                                ) {
+                                                    Text(
+                                                        text = factory.entityType,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (factory.entityType.contains("Factory", ignoreCase = true)) CoffeeOrange else CoffeeGreen,
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = "Location: ${factory.location.ifBlank { "N/A" }} | Contact: ${factory.contactInfo.ifBlank { "N/A" }}",
+                                                fontSize = 14.sp,
+                                                color = Color.DarkGray
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Accepted Coffee: ${factory.acceptedCoffeeTypes.ifBlank { "All Types" }}",
+                                                fontSize = 13.sp,
+                                                color = Color.DarkGray
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Requirements: ${factory.qualityRequirements.ifBlank { "Standard Quality" }}",
+                                                fontSize = 13.sp,
+                                                color = Color.Gray
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (showAddFactoryDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showAddFactoryDialog = false },
+                            title = {
+                                Text(
+                                    text = "Add New Factory or Buyer",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoffeeBrown
+                                )
+                            },
+                            text = {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth()
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = inputEntityName,
+                                        onValueChange = { inputEntityName = it },
+                                        label = { Text("Name") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = inputEntityType,
+                                        onValueChange = { inputEntityType = it },
+                                        label = { Text("Type (Commercial Buyer / Factory)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = inputLocation,
+                                        onValueChange = { inputLocation = it },
+                                        label = { Text("Location") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = inputContactInfo,
+                                        onValueChange = { inputContactInfo = it },
+                                        label = { Text("Contact Info") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = inputAcceptedCoffeeTypes,
+                                        onValueChange = { inputAcceptedCoffeeTypes = it },
+                                        label = { Text("Accepted Coffee Types") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = inputQualityRequirements,
+                                        onValueChange = { inputQualityRequirements = it },
+                                        label = { Text("Quality Requirements") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 2,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        if (cooperativeId == null) {
+                                            Toast.makeText(
+                                                context,
+                                                "Cooperative ID missing",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            return@Button
+                                        }
+                                        if (inputEntityName.isBlank()) {
+                                            Toast.makeText(
+                                                context,
+                                                "Please enter entity name",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                            return@Button
+                                        }
+                                        val payload = hashMapOf(
+                                            "cooperative_id" to cooperativeId,
+                                            "entity_name" to inputEntityName,
+                                            "entity_type" to inputEntityType,
+                                            "location" to inputLocation,
+                                            "contact_info" to inputContactInfo,
+                                            "accepted_coffee_types" to inputAcceptedCoffeeTypes,
+                                            "quality_requirements" to inputQualityRequirements,
+                                            "date_added" to System.currentTimeMillis(),
+                                            "added_by" to userName
+                                        )
+                                        db.collection("factories_and_buyers")
+                                            .add(payload)
+                                            .addOnSuccessListener {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Factory/Buyer added successfully",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                showAddFactoryDialog = false
+
+                                                inputEntityName = ""
+                                                inputLocation = ""
+                                                inputContactInfo = ""
+                                                inputAcceptedCoffeeTypes = ""
+                                                inputQualityRequirements = ""
+                                            }
+                                            .addOnFailureListener { error ->
+                                                Toast.makeText(
+                                                    context,
+                                                    "Failed: ${error.localizedMessage}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Save")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(
+                                    onClick = { showAddFactoryDialog = false }
+                                ) {
+                                    Text("Cancel", color = Color.Gray)
+                                }
+                            }
                         )
                     }
                 }
-
 
                 5 -> {
                     CooperativeProfilePage(
