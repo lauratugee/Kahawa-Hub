@@ -50,6 +50,23 @@ data class FactoryBuyerItem(
     val qualityRequirements: String="",
     val dateAdded : Long = 0L
 )
+data class MarketOfferItem(
+    val id: String="",
+    val cooperativeId: String="",
+    val buyerName: String="",
+    val coffeeType: String="",
+    val grade: String="",
+    val offeredPricePerKg: Double= 0.0,
+    val minQuantity: Int=0,
+    val maxQuantity: Int=0,
+    val transportCosts : Double=0.0,
+    val otherCosts: Double=0.0,
+    val location: String="",
+    val validityDat: String="",
+    val dateAdded: Long=0L,
+    val addedBy: String="",
+)
+
 @Composable
 fun CooperativeDashboard(
     selectedTab: Int,
@@ -88,6 +105,22 @@ fun CooperativeDashboard(
     var inputContactInfo by remember { mutableStateOf("") }
     var inputAcceptedCoffeeTypes by remember { mutableStateOf("") }
     var inputQualityRequirements by remember { mutableStateOf("") }
+
+    var marketOffers by remember { mutableStateOf<List<MarketOfferItem>>(emptyList()) }
+    var isOffersLoading by remember { mutableStateOf(true) }
+    var showAddOfferDialog by remember { mutableStateOf(false) }
+
+    var offerBuyerName by remember { mutableStateOf("") }
+    var offerCoffeeType by remember { mutableStateOf("") }
+    var offerGrade by remember { mutableStateOf("") }
+    var offerPricePerKg by remember { mutableStateOf("") }
+    var offerMinQuantity by remember { mutableStateOf("") }
+    var offerMaxQuantity by remember { mutableStateOf("") }
+    var offerTransportCosts by remember { mutableStateOf("") }
+    var offerOtherCosts by remember { mutableStateOf("") }
+    var offerLocation by remember { mutableStateOf("") }
+    var offerValidityDate by remember { mutableStateOf("") }
+
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
