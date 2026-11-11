@@ -15,6 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 private val MarketCream = Color(0xFFF7F3E9)
 private val MarketBrown = Color(0xFF684832)
@@ -54,6 +57,16 @@ fun CoffeeMarketPricesPage(
     var showFilterMenu by remember { mutableStateOf(false) }
     var showCoffeeMenu by remember { mutableStateOf(false) }
     var showCooperativeMenu by remember { mutableStateOf(false) }
+    var farmerMarketTab by remember { mutableStateOf(0) }
+
+    var verifiedSubmissions by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var marketOffers by remember { mutableStateOf<List<MarketOfferItem>>(emptyList()) }
+    var recommendations by remember { mutableStateOf<List<MarketRecommendation>>(emptyList()) }
+
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+    val userId = auth.currentUser?.uid
+
 
     DisposableEffect(cooperativeId) {
         isLoading = true
@@ -93,6 +106,70 @@ fun CoffeeMarketPricesPage(
             listener.remove()
         }
     }
+    DisposableEffect(userId) {
+        if(userId==null){
+            onDispose {  }
+        }else{
+            val listener = FirebaseFirestore.getInstance()
+                .collection("coffee_supply_submissions")
+                .whereEqualTo("farmer_id", userId)
+                .whereEqualTo("status", "Verified")
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        verifiedSubmissions = snapshot.documents.map { document ->
+                            document.data ?: emptyMap()
+                        }
+                    }
+                }
+            onDispose { listener.remove() }
+        }
+    }
+    DisposableEffect(cooperativeId) {
+        if (cooperativeId.isNullOrBlank()) {
+            onDispose { }
+        } else {
+            val listener = FirebaseFirestore.getInstance()
+                .collection("market_offers")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        marketOffers = snapshot.documents.map { document ->
+                            MarketOfferItem(
+                                id = document.id,
+                                cooperativeId = document.getString("cooperative_id") ?: "",
+                                buyerName = document.getString("buyer_name") ?: "",
+                                coffeeType = document.getString("coffee_type") ?: "",
+                                grade = document.getString("grade") ?: "",
+                                offeredPricePerKg = document.getDouble("offered_price_per_kg")
+                                    ?: 0.0,
+                                minQuantity = document.getLong("min_quantity")?.toInt() ?: 0,
+                                maxQuantity = document.getLong("max_quantity")?.toInt() ?: 0,
+                                transportCosts = document.getDouble("transport_costs") ?: 0.0,
+                                otherCosts = document.getDouble("other_costs") ?: 0.0,
+                                location = document.getString("location") ?: "",
+                                validityDat = document.getString("validity_date") ?: "",
+                                dateAdded = document.getLong("date_added") ?: 0L,
+                                addedBy = document.getString("added_by") ?: ""
+                            )
+                        }
+                    }
+                }
+            onDispose { listener.remove() }
+        }
+    }
+    LaunchedEffect(verifiedSubmissions, marketOffers) {
+        recommendations =
+            MarketAnalyzer.analyzeAndRankOpportunities(verifiedSubmissions, marketOffers)
+    }
+
+
+
+
+
+
+
+
+
 
     val coffeeTypes = prices
         .map { it.coffeeType }
@@ -160,12 +237,254 @@ fun CoffeeMarketPricesPage(
                 .padding(innerPadding)
                 .padding(20.dp)
         ) {
-            Text(
-                text = "Market Overview",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MarketBrown
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = farmerMarketTab == 0,
+                    onClick = { farmerMarketTab = 0 },
+                    label = { Text("Market Prices") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MarketGreen,
+                        selectedLabelColor = Color.White
+                    )
+                )
+                FilterChip(
+                    selected = farmerMarketTab == 1,
+                    onClick = { farmerMarketTab = 1 },
+                    label = { Text("Recommendations (${recommendations.size})") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MarketGreen,
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (farmerMarketTab == 1) {
+                if (recommendations.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color.White
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "🌱", fontSize = 32.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = "No recommendations available yet",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    color = MarketBrown
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "Ensure your coffee supply has been verified",
+                                    fontSize = 12.sp,
+                                    color = MarketMuted,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                            modifier = Modifier.fillMaxWidth().weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 16.dp)
+                        ) {
+                            items(recommendations) { rec ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(
+                                        defaultElevation = 4.dp
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = rec.buyerName,
+                                                    fontSize = 18.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MarketBrown
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "Coffee: ${rec.coffeeType}  ${rec.grade}",
+                                                    fontSize = 12.sp,
+                                                    color = MarketGreen
+                                                )
+                                            }
+                                            Surface(
+                                                shape = RoundedCornerShape(14.dp),
+                                                color = MarketLightGreen
+                                            ) {
+                                                Text(
+                                                    text = "Match: ${rec.matchScore}%",
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 10.dp,
+                                                        vertical = 6.dp
+                                                    ),
+                                                    fontSize = 20.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MarketGreen
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column {
+                                                Text(
+                                                    text = "Net Return",
+                                                    fontSize = 12.sp,
+                                                    color = MarketMuted
+                                                )
+                                                Text(
+                                                    text = "KES ${"%.2f".format(rec.netReturnPerKg)} per kg",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MarketBrown
+                                                )
+                                            }
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = "Estimated Total Return",
+                                                    fontSize = 12.sp,
+                                                    color = MarketMuted
+                                                )
+                                                Text(
+                                                    text = "KES ${"%.2f".format(rec.totalEstimatedReturn)}",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MarketGreen
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        HorizontalDivider(
+                                            color = Color(0xFFECE5DB)
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+
+                                        Text(
+                                            text = "💡Analysis and Recommendation: ",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MarketBrown
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = rec.recommendationReason,
+                                            fontSize = 12.sp,
+                                            color = Color.DarkGray,
+                                            lineHeight = 18.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "📍${rec.location.ifBlank { "Location N/A" }}",
+                                                fontSize = 12.sp,
+                                                color = MarketMuted
+                                            )
+                                            Button(
+                                                onClick = {
+                                                    val currentUserId=auth.currentUser?.uid
+                                                    if (currentUserId==null){
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Please log in first",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                        return@Button
+                                                    }
+                                                    val linkageRequest=hashMapOf(
+                                                        "farmer_id" to currentUserId,
+                                                        "farmer_name" to (auth.currentUser?.displayName ?: "Farmer"),
+                                                        "cooperative_id" to (cooperativeId ?: ""),
+                                                        "buyer_name" to rec.buyerName,
+                                                        "coffee_type" to rec.coffeeType,
+                                                        "grade" to rec.grade,
+                                                        "offered_price_per_kg" to rec.offeredPricePerKg,
+                                                        "net_return_per_kg" to rec.netReturnPerKg,
+                                                        "location" to rec.location,
+                                                        "status" to "Pending",
+                                                        "date_requested" to System.currentTimeMillis()
+                                                    )
+                                                    FirebaseFirestore.getInstance()
+                                                        .collection("market_links")
+                                                        .add(linkageRequest)
+                                                        .addOnSuccessListener {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Link request sent",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
+                                                        }
+                                                        .addOnFailureListener { e ->
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Failed to send link request: ${e.localizedMessage}",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
+                                                        }
+                                                },
+                                                shape = RoundedCornerShape(14.dp),
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MarketGreen
+                                                ),
+                                                contentPadding = PaddingValues(
+                                                    horizontal = 14.dp,
+                                                    vertical = 6.dp
+                                                ),
+                                                modifier = Modifier.height(36.dp)
+                                            ) {
+                                                Text(
+                                                    text = "View",
+                                                    fontSize = 12.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Text(
+                    text = "Market Overview",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MarketBrown
+                )
             Spacer(modifier = Modifier.height(5.dp))
 
             OutlinedTextField(
@@ -507,4 +826,5 @@ fun CoffeeMarketPricesPage(
             }
         }
     }
+}
 }
