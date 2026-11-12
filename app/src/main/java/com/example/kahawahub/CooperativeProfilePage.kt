@@ -138,6 +138,12 @@ fun CooperativeProfilePage(
                 }
             }
 
+            // Cooperative Location Map
+            CooperativeMapCard(
+                cooperativeName = cooperativeName.ifBlank { "Cooperative Society" },
+                locationString = location.ifBlank { "Nyeri" }
+            )
+
             // Supply & Demand Overview Card
             Card(
                 modifier = Modifier.fillMaxWidth(),

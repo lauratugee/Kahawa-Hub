@@ -1025,6 +1025,24 @@ fun CooperativeDashboard(
                                             shape = RoundedCornerShape(10.dp)
                                         )
 
+                                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        Text(
+                                            text = "Factory / Buyer Quality Grade",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = CoffeeBrown
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        OutlinedTextField(
+                                            value = qualityGradeInput,
+                                            onValueChange = { qualityGradeInput = it },
+                                            label = { Text("Quality Grade (e.g. AA, AB, PB)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+
                                         Spacer(modifier = Modifier.height(12.dp))
 
                                         Text(
@@ -1054,9 +1072,12 @@ fun CooperativeDashboard(
                                                 val verifiedQty =
                                                     verifiedQuantityInput.toLongOrNull()
                                                         ?: declaredQuantity
+                                                val gradeInput = qualityGradeInput.ifBlank { "AA" }
                                                 val updateData = mutableMapOf<String, Any>(
                                                     "status" to "Verified",
                                                     "verified_quantity_kg" to verifiedQty,
+                                                    "quality_status" to "Passed",
+                                                    "grade" to gradeInput,
                                                     "reviewed_by" to userName,
                                                     "reviewed_at" to System.currentTimeMillis()
                                                 )
@@ -1065,13 +1086,13 @@ fun CooperativeDashboard(
                                                     .document(submissionId)
                                                     .update(updateData)
                                                     .addOnSuccessListener {
-                                                        // Automatically post announcement for approval
+                                                        // Automatically post announcement upon quality approval
                                                         if (cooperativeId != null) {
                                                             db.collection("announcements").add(
                                                                 hashMapOf(
                                                                     "cooperative_id" to cooperativeId,
-                                                                    "title" to "Coffee Supply Approved & Passed Quality Check",
-                                                                    "message" to "Your supply submission of ${verifiedQty}kg has passed quality inspection and been approved by $userName.",
+                                                                    "title" to "Coffee Supply Quality Approved!",
+                                                                    "message" to "Your supply submission of ${verifiedQty}kg has passed factory/buyer quality inspection (Grade: $gradeInput) and been fully approved.",
                                                                     "date_posted" to System.currentTimeMillis()
                                                                 )
                                                             )
@@ -1079,7 +1100,7 @@ fun CooperativeDashboard(
 
                                                         Toast.makeText(
                                                             context,
-                                                            "Submission verified successfully!",
+                                                            "Volume accepted & quality approved!",
                                                             Toast.LENGTH_SHORT
                                                         ).show()
                                                         selectedSubmittedForReview = null
@@ -1096,7 +1117,7 @@ fun CooperativeDashboard(
                                             colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
                                             shape = RoundedCornerShape(10.dp)
                                         ) {
-                                            Text("🟢 Verify")
+                                            Text("🟢 Accept Volume & Approve Quality")
                                         }
 
                                         Row(
@@ -1147,6 +1168,7 @@ fun CooperativeDashboard(
                                                     } else {
                                                         val updateData = mutableMapOf<String, Any>(
                                                             "status" to "Rejected",
+                                                            "quality_status" to "Failed",
                                                             "rejection_reason" to rejectionReasonInput,
                                                             "reviewed_by" to userName,
                                                             "reviewed_at" to System.currentTimeMillis()
@@ -1156,13 +1178,13 @@ fun CooperativeDashboard(
                                                             .document(submissionId)
                                                             .update(updateData)
                                                             .addOnSuccessListener {
-                                                                // Automatically post announcement for rejection & pick-up instructions
+                                                                // Automatically post announcement for rejection & collection notice
                                                                 if (cooperativeId != null) {
                                                                   db.collection("announcements").add(
                                                                       hashMapOf(
                                                                           "cooperative_id" to cooperativeId,
                                                                           "title" to "Coffee Supply Quality Check Failed",
-                                                                          "message" to "Your coffee supply submission was rejected during quality inspection. Reason: $rejectionReasonInput. Please collect your coffee from your specific cooperative office.",
+                                                                          "message" to "Your coffee supply submission failed factory/buyer quality inspection. Reason: $rejectionReasonInput. Please collect your coffee from your specific cooperative office.",
                                                                           "date_posted" to System.currentTimeMillis()
                                                                       )
                                                                   )
@@ -1170,7 +1192,7 @@ fun CooperativeDashboard(
 
                                                                 Toast.makeText(
                                                                     context,
-                                                                    "Submission rejected",
+                                                                    "Marked as Rejected with collection notice",
                                                                     Toast.LENGTH_SHORT
                                                                 ).show()
                                                                 selectedSubmittedForReview = null
