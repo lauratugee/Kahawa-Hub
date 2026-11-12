@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -55,6 +56,10 @@ fun CooperativeProfilePage(
     var officeAddress by remember { mutableStateOf("") }
     var contactPerson by remember { mutableStateOf("") }
     var openingHours by remember { mutableStateOf("") }
+
+    var totalVerifiedSupplyKg by remember { mutableStateOf(0L) }
+    var totalSoldSupplyKg by remember { mutableStateOf(0L) }
+    var totalMarketDemandKg by remember { mutableStateOf(0L) }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -126,6 +131,38 @@ fun CooperativeProfilePage(
                         Toast.LENGTH_LONG
                     ).show()
                 }
+
+            // 1. Calculate total verified supply from linked farmers
+            db.collection("coffee_supply_submissions")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        totalVerifiedSupplyKg = snapshot.documents
+                            .filter { (it.getString("status") ?: "").equals("Verified", ignoreCase = true) }
+                            .sumOf { it.getLong("verified_quantity_kg") ?: it.getLong("quantity_kg") ?: 0L }
+                    }
+                }
+
+            // 2. Calculate total sold/completed supply from market links
+            db.collection("market_links")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        totalSoldSupplyKg = snapshot.documents
+                            .filter { (it.getString("status") ?: "").equals("Completed", ignoreCase = true) }
+                            .sumOf { it.getLong("quantity_kg") ?: 0L }
+                    }
+                }
+
+            // 3. Calculate total market demand from active offers
+            db.collection("market_offers")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        totalMarketDemandKg = snapshot.documents
+                            .sumOf { it.getLong("max_quantity") ?: it.getLong("min_quantity") ?: 0L }
+                    }
+                }
         }
     }
 
@@ -187,6 +224,55 @@ fun CooperativeProfilePage(
             if (isLoading) {
                 CircularProgressIndicator(color = ProfileGreen)
             } else {
+                // Supply & Demand Overview Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "📊 Coffee Supply & Demand Overview",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ProfileBrown
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val availableStock = (totalVerifiedSupplyKg - totalSoldSupplyKg).coerceAtLeast(0L)
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(text = "Available Stock", fontSize = 12.sp, color = Color.Gray)
+                                Text(
+                                    text = "%,d kg".format(availableStock),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ProfileGreen
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(text = "Sold: %,d kg".format(totalSoldSupplyKg), fontSize = 11.sp, color = Color.DarkGray)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(text = "Total Market Demand", fontSize = 12.sp, color = Color.Gray)
+                                Text(
+                                    text = "%,d kg".format(totalMarketDemandKg),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ProfileBrown
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
                 ProfileSectionCard(
                     title = "Basic Information",
                     description = "Cooperative name, description and location",

@@ -43,6 +43,11 @@ fun ProfilePage(
     var cooperativeName by remember { mutableStateOf("") }
     var cooperativeLocation by remember { mutableStateOf("") }
 
+    // Supply & Sales Dashboard States
+    var totalDeclaredSupplyKg by remember { mutableStateOf(0L) }
+    var verifiedOrSoldSupplyKg by remember { mutableStateOf(0L) }
+    var pendingSupplyKg by remember { mutableStateOf(0L) }
+
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var isEditing by remember { mutableStateOf(false) }
@@ -96,7 +101,30 @@ fun ProfilePage(
                         }
                 }
             }
+
+        // Calculate farmer's supply and sales metrics
+        db.collection("coffee_supply_submissions")
+            .whereEqualTo("farmer_id", userId)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val docs = snapshot.documents
+                    totalDeclaredSupplyKg = docs.sumOf { it.getLong("quantity_kg") ?: 0L }
+                    verifiedOrSoldSupplyKg = docs
+                        .filter { 
+                            val st = it.getString("status") ?: ""
+                            st.equals("Verified", ignoreCase = true) || st.equals("Completed", ignoreCase = true)
+                        }
+                        .sumOf { it.getLong("verified_quantity_kg") ?: it.getLong("quantity_kg") ?: 0L }
+                    pendingSupplyKg = docs
+                        .filter { 
+                            val st = it.getString("status") ?: ""
+                            st.equals("Pending", ignoreCase = true) || st.equals("Under Review", ignoreCase = true)
+                        }
+                        .sumOf { it.getLong("quantity_kg") ?: 0L }
+                }
+            }
     }
+
     if (showLeaveConfirmation) {
         AlertDialog(
             onDismissRequest = {
@@ -267,6 +295,61 @@ fun ProfilePage(
                                 vertical = 8.dp
                             )
                         )
+                    }
+                }
+            }
+
+            // Farmer Supply & Sales Summary Card
+            if (userType.equals("Farmer", ignoreCase = true)) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "🌾 My Coffee Supply & Sales Summary",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ProfileBrown
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(text = "Total Declared", fontSize = 11.sp, color = Color.Gray)
+                                Text(
+                                    text = "%,d kg".format(totalDeclaredSupplyKg),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ProfileBrown
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "Verified / Sold", fontSize = 11.sp, color = Color.Gray)
+                                Text(
+                                    text = "%,d kg".format(verifiedOrSoldSupplyKg),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ProfileGreen
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(text = "Pending", fontSize = 11.sp, color = Color.Gray)
+                                Text(
+                                    text = "%,d kg".format(pendingSupplyKg),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE65100)
+                                )
+                            }
+                        }
                     }
                 }
             }
