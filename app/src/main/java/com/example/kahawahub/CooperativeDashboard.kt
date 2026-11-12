@@ -109,6 +109,7 @@ fun CooperativeDashboard(
     var selectedStatusFilter by remember { mutableStateOf("All") }
     var selectedSubmittedForReview by remember { mutableStateOf<Map<String, Any>?>(null) }
     var verifiedQuantityInput by remember { mutableStateOf("") }
+    var qualityGradeInput by remember { mutableStateOf("AA") }
     var rejectionReasonInput by remember { mutableStateOf("") }
     var factoriesAndBuyers by remember { mutableStateOf<List<FactoryBuyerItem>>(emptyList()) }
     var isFactoriesLoading by remember { mutableStateOf(true) }
@@ -458,7 +459,7 @@ fun CooperativeDashboard(
                                 status = document.getString("status") ?: "Pending",
                                 dateRequested = document.getLong("date_requested") ?: 0L
                             )
-                        }.sortedByDescending { it.dateRequested }
+                        }.sortedBy { it.dateRequested }
                     }
                     isLinksLoading=false
                 }
@@ -1064,6 +1065,18 @@ fun CooperativeDashboard(
                                                     .document(submissionId)
                                                     .update(updateData)
                                                     .addOnSuccessListener {
+                                                        // Automatically post announcement for approval
+                                                        if (cooperativeId != null) {
+                                                            db.collection("announcements").add(
+                                                                hashMapOf(
+                                                                    "cooperative_id" to cooperativeId,
+                                                                    "title" to "Coffee Supply Approved & Passed Quality Check",
+                                                                    "message" to "Your supply submission of ${verifiedQty}kg has passed quality inspection and been approved by $userName.",
+                                                                    "date_posted" to System.currentTimeMillis()
+                                                                )
+                                                            )
+                                                        }
+
                                                         Toast.makeText(
                                                             context,
                                                             "Submission verified successfully!",
@@ -1106,7 +1119,7 @@ fun CooperativeDashboard(
                                                                 context,
                                                                 "Marked as Under Review",
                                                                 Toast.LENGTH_SHORT
-                                                            ).show()
+                                                                ).show()
                                                             selectedSubmittedForReview = null
                                                         }
                                                         .addOnFailureListener { error ->
@@ -1143,6 +1156,18 @@ fun CooperativeDashboard(
                                                             .document(submissionId)
                                                             .update(updateData)
                                                             .addOnSuccessListener {
+                                                                // Automatically post announcement for rejection & pick-up instructions
+                                                                if (cooperativeId != null) {
+                                                                  db.collection("announcements").add(
+                                                                      hashMapOf(
+                                                                          "cooperative_id" to cooperativeId,
+                                                                          "title" to "Coffee Supply Quality Check Failed",
+                                                                          "message" to "Your coffee supply submission was rejected during quality inspection. Reason: $rejectionReasonInput. Please collect your coffee from your specific cooperative office.",
+                                                                          "date_posted" to System.currentTimeMillis()
+                                                                      )
+                                                                  )
+                                                                }
+
                                                                 Toast.makeText(
                                                                     context,
                                                                     "Submission rejected",
@@ -2067,9 +2092,24 @@ fun CooperativeDashboard(
                                                                 .document(link.id)
                                                                 .update("status", "Completed")
                                                                 .addOnSuccessListener {
+                                                                    // Auto-close / remove matching market offer
+                                                                    if (cooperativeId != null) {
+                                                                        db.collection("market_offers")
+                                                                            .whereEqualTo("cooperative_id", cooperativeId)
+                                                                            .whereEqualTo("buyer_name", link.buyerName)
+                                                                            .get()
+                                                                            .addOnSuccessListener { querySnapshot ->
+                                                                                for (offerDoc in querySnapshot.documents) {
+                                                                                    db.collection("market_offers")
+                                                                                        .document(offerDoc.id)
+                                                                                        .delete()
+                                                                                }
+                                                                            }
+                                                                    }
+
                                                                     Toast.makeText(
                                                                         context,
-                                                                        "Marked as Completed",
+                                                                        "Marked as Completed & Offer Auto-Closed",
                                                                         Toast.LENGTH_SHORT
                                                                     ).show()
                                                                 }

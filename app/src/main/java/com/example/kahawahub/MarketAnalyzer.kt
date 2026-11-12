@@ -20,6 +20,19 @@ data class MarketRecommendation(
 
 object MarketAnalyzer {
 
+    private fun calculateTransportCost(farmerLocation: String, buyerLocation: String): Double {
+        val fLoc = farmerLocation.trim().lowercase()
+        val bLoc = buyerLocation.trim().lowercase()
+
+        return if (fLoc.isBlank() || bLoc.isBlank()) {
+            10.0
+        } else if (fLoc == bLoc || fLoc.contains(bLoc) || bLoc.contains(fLoc)) {
+           7.50
+        } else {
+            30.00
+        }
+    }
+
     fun analyzeAndRankOpportunities(
         verifiedSubmissions: List<Map<String, Any>>,
         marketOffers: List<MarketOfferItem>
@@ -36,13 +49,14 @@ object MarketAnalyzer {
                 (sub["verified_quantity_kg"] as? Long) ?: (sub["quantity_kg"] as? Long) ?: 0L
             }
 
-        // 2. Determine primary verified coffee type
-        val primaryCoffeeType = verifiedSubmissions
-            .firstOrNull { sub ->
-                val status = (sub["status"] as? String) ?: ""
-                status.equals("Verified", ignoreCase = true)
-            }
-            ?.get("coffee_type") as? String ?: "Coffee Cherries"
+        // 2. Determine primary verified coffee type & farmer location
+        val primarySubmission = verifiedSubmissions.firstOrNull { sub ->
+            val status = (sub["status"] as? String) ?: ""
+            status.equals("Verified", ignoreCase = true)
+        }
+
+        val primaryCoffeeType = primarySubmission?.get("coffee_type") as? String ?: "Coffee Cherries"
+        val farmerLocation = primarySubmission?.get("location") as? String ?: ""
 
         if (totalVerifiedKg <= 0L || marketOffers.isEmpty()) {
             return emptyList()
@@ -54,7 +68,10 @@ object MarketAnalyzer {
                     offer.coffeeType.contains(primaryCoffeeType, ignoreCase = true) ||
                     primaryCoffeeType.contains(offer.coffeeType, ignoreCase = true)
 
-            val netReturn = offer.offeredPricePerKg - offer.transportCosts - offer.otherCosts
+            // Calculate dynamic transport cost based on region distance
+            val estimatedTransportCost = calculateTransportCost(farmerLocation, offer.location)
+
+            val netReturn = offer.offeredPricePerKg - estimatedTransportCost - offer.otherCosts
             val totalReturn = netReturn * totalVerifiedKg
 
             val minQty = offer.minQuantity.toDouble()
@@ -65,7 +82,7 @@ object MarketAnalyzer {
             val reasons = mutableListOf<String>()
 
             if (isTypeCompatible) {
-                score += 30
+                score += 25
                 reasons.add("Exact match for your verified $primaryCoffeeType.")
             } else {
                 score -= 20
@@ -79,10 +96,23 @@ object MarketAnalyzer {
                 reasons.add("Quantity differs from buyer's preferred range.")
             }
 
-            if (netReturn > 0) {
-                reasons.add("Estimated net return: KES %.2f per kg after transport & costs.".format(netReturn))
+            // Proximity bonus based on region matching
+            val isLocalMatch = farmerLocation.isNotBlank() && offer.location.isNotBlank() &&
+                    (farmerLocation.equals(offer.location, ignoreCase = true) ||
+                            farmerLocation.contains(offer.location, ignoreCase = true) ||
+                            offer.location.contains(farmerLocation, ignoreCase = true))
+
+            if (isLocalMatch) {
+                score += 15
+                reasons.add("Local proximity match (${offer.location}) ensures lower transport overhead (KES %.2f/kg).".format(estimatedTransportCost))
             } else {
-                reasons.add("Warning: Costs exceed offered price.")
+                reasons.add("Regional transport cost estimated at KES %.2f/kg for distance to ${offer.location}.".format(estimatedTransportCost))
+            }
+
+            if (netReturn > 0) {
+                reasons.add("Estimated net return: KES %.2f per kg.".format(netReturn))
+            } else {
+                reasons.add("Warning: Transport & costs exceed offered price.")
             }
 
             recommendations.add(
@@ -94,7 +124,7 @@ object MarketAnalyzer {
                     offeredPricePerKg = offer.offeredPricePerKg,
                     minQuantity = offer.minQuantity,
                     maxQuantity = offer.maxQuantity,
-                    transportCosts = offer.transportCosts,
+                    transportCosts = estimatedTransportCost,
                     otherCosts = offer.otherCosts,
                     netReturnPerKg = netReturn,
                     totalEstimatedReturn = totalReturn,

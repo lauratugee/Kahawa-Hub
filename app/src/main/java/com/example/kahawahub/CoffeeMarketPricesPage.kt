@@ -71,40 +71,42 @@ fun CoffeeMarketPricesPage(
 
     DisposableEffect(cooperativeId) {
         isLoading = true
-        val collectionRef = FirebaseFirestore.getInstance().collection("coffee_prices")
-        val query = if (!cooperativeId.isNullOrBlank()) {
-            collectionRef.whereEqualTo("cooperative_id", cooperativeId)
+        if (cooperativeId.isNullOrBlank()) {
+            prices = emptyList()
+            isLoading = false
+            onDispose { }
         } else {
-            collectionRef
-        }
+            val query = FirebaseFirestore.getInstance().collection("coffee_prices")
+                .whereEqualTo("cooperative_id", cooperativeId)
 
-        val listener = query.addSnapshotListener { documents, error ->
-            if (error != null) {
-                loadError = true
-                isLoading = false
-                return@addSnapshotListener
-            }
-
-            if (documents != null) {
-                prices = documents.documents.map { document ->
-                    MarketPrice(
-                        id = document.id,
-                        coffeeType = document.getString("coffee_type") ?: "",
-                        price = document.getLong("price") ?: 0L,
-                        previousPrice = document.getLong("previous_price") ?: 0L,
-                        currency = document.getString("currency") ?: "KES",
-                        priceUnit = document.getString("price_unit") ?: "per kg",
-                        cooperativeName = document.getString("cooperative_name") ?: "",
-                        cooperativeId = document.getString("cooperative_id") ?: ""
-                    )
+            val listener = query.addSnapshotListener { documents, error ->
+                if (error != null) {
+                    loadError = true
+                    isLoading = false
+                    return@addSnapshotListener
                 }
-                loadError = false
-                isLoading = false
-            }
-        }
 
-        onDispose {
-            listener.remove()
+                if (documents != null) {
+                    prices = documents.documents.map { document ->
+                        MarketPrice(
+                            id = document.id,
+                            coffeeType = document.getString("coffee_type") ?: "",
+                            price = document.getLong("price") ?: 0L,
+                            previousPrice = document.getLong("previous_price") ?: 0L,
+                            currency = document.getString("currency") ?: "KES",
+                            priceUnit = document.getString("price_unit") ?: "per kg",
+                            cooperativeName = document.getString("cooperative_name") ?: "",
+                            cooperativeId = document.getString("cooperative_id") ?: ""
+                        )
+                    }
+                    loadError = false
+                    isLoading = false
+                }
+            }
+
+            onDispose {
+                listener.remove()
+            }
         }
     }
     DisposableEffect(userId) {
@@ -679,12 +681,15 @@ fun CoffeeMarketPricesPage(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (prices.isEmpty()) {
-                                "No prices available yet"
+                            text = if (cooperativeId.isNullOrBlank()) {
+                                "Please join a cooperative to view your cooperative's prices"
+                            } else if (prices.isEmpty()) {
+                                "No prices published by your cooperative yet"
                             } else {
                                 "No prices match your search or filters"
                             },
-                            color = MarketMuted
+                            color = MarketMuted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
                 }
