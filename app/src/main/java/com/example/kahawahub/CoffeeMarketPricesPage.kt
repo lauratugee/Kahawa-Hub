@@ -62,6 +62,7 @@ fun CoffeeMarketPricesPage(
     var verifiedSubmissions by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var marketOffers by remember { mutableStateOf<List<MarketOfferItem>>(emptyList()) }
     var recommendations by remember { mutableStateOf<List<MarketRecommendation>>(emptyList()) }
+    var myLinkageRequests by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
 
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -157,6 +158,25 @@ fun CoffeeMarketPricesPage(
             onDispose { listener.remove() }
         }
     }
+    // Listen to current farmer's active linkage requests
+    DisposableEffect(userId) {
+        if (userId.isNullOrBlank()) {
+            onDispose { }
+        } else {
+            val listener = FirebaseFirestore.getInstance()
+                .collection("market_links")
+                .whereEqualTo("farmer_id", userId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        myLinkageRequests = snapshot.documents.map { doc ->
+                            doc.data ?: emptyMap()
+                        }
+                    }
+                }
+            onDispose { listener.remove() }
+        }
+    }
+
     LaunchedEffect(verifiedSubmissions, marketOffers) {
         recommendations =
             MarketAnalyzer.analyzeAndRankOpportunities(verifiedSubmissions, marketOffers)
@@ -415,62 +435,71 @@ fun CoffeeMarketPricesPage(
                                                 fontSize = 12.sp,
                                                 color = MarketMuted
                                             )
-                                            Button(
-                                                onClick = {
-                                                    val currentUserId=auth.currentUser?.uid
-                                                    if (currentUserId==null){
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Please log in first",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                        return@Button
+                                            val existingRequest = myLinkageRequests.find { req ->
+                                                val reqBuyer = (req["buyer_name"] as? String) ?: ""
+                                                reqBuyer.equals(rec.buyerName, ignoreCase = true)
+                                            }
+
+                                            if (existingRequest != null) {
+                                                val reqStatus = (existingRequest["status"] as? String) ?: "Pending"
+                                                Surface(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    color = when (reqStatus.lowercase()) {
+                                                        "completed" -> Color(0xFFC8E6C9)
+                                                        "processing" -> Color(0xFFBBDEFB)
+                                                        else -> Color(0xFFFFE0B2)
                                                     }
-                                                    val linkageRequest=hashMapOf(
-                                                        "farmer_id" to currentUserId,
-                                                        "farmer_name" to (auth.currentUser?.displayName ?: "Farmer"),
-                                                        "cooperative_id" to (cooperativeId ?: ""),
-                                                        "buyer_name" to rec.buyerName,
-                                                        "coffee_type" to rec.coffeeType,
-                                                        "grade" to rec.grade,
-                                                        "offered_price_per_kg" to rec.offeredPricePerKg,
-                                                        "net_return_per_kg" to rec.netReturnPerKg,
-                                                        "location" to rec.location,
-                                                        "status" to "Pending",
-                                                        "date_requested" to System.currentTimeMillis()
+                                                ) {
+                                                    Text(
+                                                        text = "Status: $reqStatus",
+                                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = when (reqStatus.lowercase()) {
+                                                            "completed" -> MarketGreen
+                                                            "processing" -> Color(0xFF1976D2)
+                                                            else -> MarketBrown
+                                                        }
                                                     )
-                                                    FirebaseFirestore.getInstance()
-                                                        .collection("market_links")
-                                                        .add(linkageRequest)
-                                                        .addOnSuccessListener {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Link request sent",
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
+                                                }
+                                            } else {
+                                                Button(
+                                                    onClick = {
+                                                        val currentUserId = auth.currentUser?.uid
+                                                        if (currentUserId == null) {
+                                                            Toast.makeText(context, "Please log in first", Toast.LENGTH_SHORT).show()
+                                                            return@Button
                                                         }
-                                                        .addOnFailureListener { e ->
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Failed to send link request: ${e.localizedMessage}",
-                                                                Toast.LENGTH_LONG
-                                                            ).show()
-                                                        }
-                                                },
-                                                shape = RoundedCornerShape(14.dp),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = MarketGreen
-                                                ),
-                                                contentPadding = PaddingValues(
-                                                    horizontal = 14.dp,
-                                                    vertical = 6.dp
-                                                ),
-                                                modifier = Modifier.height(36.dp)
-                                            ) {
-                                                Text(
-                                                    text = "View",
-                                                    fontSize = 12.sp
-                                                )
+                                                        val linkageRequest = hashMapOf(
+                                                            "farmer_id" to currentUserId,
+                                                            "farmer_name" to (auth.currentUser?.displayName ?: "Farmer"),
+                                                            "cooperative_id" to (cooperativeId ?: ""),
+                                                            "buyer_name" to rec.buyerName,
+                                                            "coffee_type" to rec.coffeeType,
+                                                            "grade" to rec.grade,
+                                                            "offered_price_per_kg" to rec.offeredPricePerKg,
+                                                            "net_return_per_kg" to rec.netReturnPerKg,
+                                                            "location" to rec.location,
+                                                            "status" to "Pending",
+                                                            "date_requested" to System.currentTimeMillis()
+                                                        )
+                                                        FirebaseFirestore.getInstance()
+                                                            .collection("market_links")
+                                                            .add(linkageRequest)
+                                                            .addOnSuccessListener {
+                                                                Toast.makeText(context, "Link request sent", Toast.LENGTH_LONG).show()
+                                                            }
+                                                            .addOnFailureListener { e ->
+                                                                Toast.makeText(context, "Failed to send link request: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                            }
+                                                    },
+                                                    shape = RoundedCornerShape(14.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MarketGreen),
+                                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                                    modifier = Modifier.height(36.dp)
+                                                ) {
+                                                    Text(text = "Request Linkage", fontSize = 12.sp)
+                                                }
                                             }
                                         }
                                     }

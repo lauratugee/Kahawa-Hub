@@ -1987,7 +1987,7 @@ fun CooperativeDashboard(
                                                     Surface(
                                                         shape = RoundedCornerShape(12.dp),
                                                         color = when (link.status.lowercase()) {
-                                                            "completed" -> Color(0xFC8E6C9)
+                                                            "completed" -> Color(0xFFC8E6C9)
                                                             "pending" -> Color(0xFFBBDEFB)
                                                             else -> Color(0xFFFFE0B2)
                                                         }
