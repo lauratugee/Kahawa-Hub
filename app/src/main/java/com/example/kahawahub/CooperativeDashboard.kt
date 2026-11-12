@@ -1613,8 +1613,11 @@ fun CooperativeDashboard(
                             }
                             Button(
                                 onClick = {
-                                    if (marketManagementTab == 0)
+                                    if (marketManagementTab == 0) {
                                         showAddFactoryDialog = true
+                                    } else {
+                                        showAddOfferDialog = true
+                                    }
                                 },
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = CoffeeGreen
