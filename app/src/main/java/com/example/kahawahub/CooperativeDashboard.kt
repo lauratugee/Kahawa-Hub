@@ -291,7 +291,7 @@ fun CooperativeDashboard(
             isFactoriesLoading = false
             onDispose { }
         } else {
-            val listener = db.collection("factory_buyers")
+            val listener = db.collection("factory_and_buyers")
                 .whereEqualTo("cooperative_id", cooperativeId)
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
@@ -366,6 +366,51 @@ fun CooperativeDashboard(
             }
         }
     }
+
+    // Listen to factories and buyers for this cooperative in real-time
+    DisposableEffect(cooperativeId) {
+        val listener = if (cooperativeId == null) {
+            factoriesAndBuyers = emptyList()
+            isFactoriesLoading = false
+            null
+        } else {
+            db.collection("factories_and_buyers")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e(
+                            "Factory/Buyers",
+                            "Error fetching factory/buyers: ${error.message}"
+                        )
+                        isFactoriesLoading = false
+                        return@addSnapshotListener
+                    }
+                    if (snapshot != null) {
+                        factoriesAndBuyers = snapshot.documents.map { document ->
+                            FactoryBuyerItem(
+                                id = document.id,
+                                cooperativeId = document.getString("cooperative_id") ?: "",
+                                entityName = document.getString("entity_name") ?: "",
+                                entityType = document.getString("entity_type")
+                                    ?: "Commercial Buyer/Factory/Miller",
+                                location = document.getString("location") ?: "",
+                                contactInfo = document.getString("contact_info") ?: "",
+                                acceptedCoffeeTypes = document.getString("accepted_coffee_types")
+                                    ?: "",
+                                qualityRequirements = document.getString("quality_requirements")
+                                    ?: "",
+                                dateAdded = document.getLong("date_added") ?: 0L
+                            )
+                        }.sortedByDescending { it.dateAdded }
+                    }
+                    isFactoriesLoading = false
+                }
+        }
+        onDispose {
+            listener?.remove()
+        }
+    }
+
 
 
     Scaffold(
@@ -2078,8 +2123,7 @@ fun CooperativeDashboard(
                                                 "cooperative_id" to cooperativeId,
                                                 "buyer_name" to offerBuyerName,
                                                 "coffee_type" to offerCoffeeType,
-                                                "grade" to offerGrade,
-                                                "offered_price_per_kg" to (offerPricePerKg.toDoubleOrNull() ?: 0.0),
+                                                "grade" to offerGrade,"offered_price_per_kg" to (offerPricePerKg.toDoubleOrNull() ?: 0.0),
                                                 "min_quantity" to (offerMinQuantity.toIntOrNull() ?: 0),
                                                 "max_quantity" to (offerMaxQuantity.toIntOrNull() ?: 0),
                                                 "transport_costs" to (offerTransportCosts.toDoubleOrNull() ?: 0.0),
@@ -2137,15 +2181,14 @@ fun CooperativeDashboard(
                 }
 
                 5 -> {
-                        CooperativeProfilePage(
-                            onLogoutClick = onLogoutClick
-                        )
-                    }
+                    CooperativeProfilePage(
+                        onLogoutClick = onLogoutClick
+                    )
                 }
             }
         }
     }
-    
+}
 
 
 
