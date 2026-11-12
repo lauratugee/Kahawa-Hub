@@ -30,6 +30,7 @@ import java.util.Date
 import java.util.Locale
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.rpc.Status
 
 private val CoffeeCream = Color(0xFFF7F3E9)
 private val CoffeeBrown = Color(0xFF684832)
@@ -65,6 +66,20 @@ data class MarketOfferItem(
     val validityDat: String="",
     val dateAdded: Long=0L,
     val addedBy: String="",
+)
+data class MarketLinkItem(
+    val id: String="",
+    val cooperativeId: String="",
+    val farmerId: String="",
+    val farmerName: String="",
+    val buyerName: String="",
+    val coffeeType: String="",
+    val grade: String="",
+    val offeredPricePerKg: Double = 0.0,
+    val netReturnPerKg : Double = 0.0,
+    val location: String="",
+    val status: String="Pending",
+    val dateRequested : Long=0L
 )
 
 @Composable
@@ -121,6 +136,9 @@ fun CooperativeDashboard(
     var offerOtherCosts by remember { mutableStateOf("") }
     var offerLocation by remember { mutableStateOf("") }
     var offerValidityDate by remember { mutableStateOf("") }
+
+    var marketLinks by remember { mutableStateOf<List<MarketLinkItem>>(emptyList()) }
+    var isLinksLoading by remember { mutableStateOf(true) }
 
 
 
@@ -410,6 +428,45 @@ fun CooperativeDashboard(
             listener?.remove()
         }
     }
+    DisposableEffect(cooperativeId) {
+        val listener=if (cooperativeId==null){
+            marketLinks=emptyList()
+            isLinksLoading=false
+            null
+        } else {
+            db.collection("market_links")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e("MarketLinks", "Error fetching market links: ${error.message}")
+                        isLinksLoading = false
+                        return@addSnapshotListener
+                    }
+                    if (snapshot !=null){
+                        marketLinks=snapshot.documents.map { document ->
+                            MarketLinkItem(
+                                id = document.id,
+                                cooperativeId = document.getString("cooperative_id") ?: "",
+                                farmerId = document.getString("farmer_id") ?: "",
+                                farmerName = document.getString("farmer_name") ?: "",
+                                buyerName = document.getString("buyer_name") ?: "",
+                                coffeeType = document.getString("coffee_type") ?: "",
+                                grade = document.getString("grade") ?: "",
+                                offeredPricePerKg = document.getDouble("offered_price_per_kg") ?: 0.0,
+                                netReturnPerKg = document.getDouble("net_return_per_kg") ?: 0.0,
+                                location = document.getString("location") ?: "",
+                                status = document.getString("status") ?: "Pending",
+                                dateRequested = document.getLong("date_requested") ?: 0L
+                            )
+                        }.sortedByDescending { it.dateRequested }
+                    }
+                    isLinksLoading=false
+                }
+        }
+        onDispose {
+            listener?.remove()
+        }
+    }
 
 
 
@@ -634,6 +691,17 @@ fun CooperativeDashboard(
                                         selectedLabelColor = Color.White
                                     )
                                 )
+                                FilterChip(
+                                    selected=marketManagementTab==2,
+                                    onClick = { marketManagementTab=2 },
+                                    label = { Text("Requests (${marketLinks.size})") },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = CoffeeGreen,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+
+
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -1849,6 +1917,187 @@ fun CooperativeDashboard(
                                 }
                             }
                         }
+                        if(marketManagementTab!=2){
+                            Button(
+                                onClick={
+                                    if(marketManagementTab==0){
+                                        showAddFactoryDialog=true
+                                    } else {
+                                        showAddOfferDialog=true
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CoffeeGreen
+                                ),
+                                shape=RoundedCornerShape(12.dp)
+                            ){
+                                Text(if(marketManagementTab==0) "Add Factory" else "Add Offer")
+                            }
+                        } else if(marketManagementTab==2) {
+                            if (isLinksLoading) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = CoffeeGreen)
+                                }
+                            } else if (marketLinks.isEmpty()) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No linkage requests received yet",
+                                            fontSize = 14.sp,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxWidth().weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    items(marketLinks) { link ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.fillMaxWidth().padding(16.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Text(
+                                                        text = "Farmer: ${link.farmerName}",
+                                                        fontSize = 18.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = CoffeeBrown
+                                                    )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        color = when (link.status.lowercase()) {
+                                                            "completed" -> Color(0xFC8E6C9)
+                                                            "pending" -> Color(0xFFBBDEFB)
+                                                            else -> Color(0xFFFFE0B2)
+                                                        }
+                                                    ) {
+                                                        Text(
+                                                            text = link.status,
+                                                            fontSize = 11.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = when (link.status.lowercase()) {
+                                                                "completed" -> CoffeeGreen
+                                                                "processing" -> Color(0xFF1976D2)
+                                                                else -> CoffeeOrange
+                                                            },
+                                                            modifier = Modifier.padding(
+                                                                horizontal = 8.dp,
+                                                                vertical = 4.dp
+                                                            )
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                Text(
+                                                    text = "Buyer: ${link.buyerName} | Coffee: ${link.coffeeType} (${link.grade})",
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                Text(
+                                                    text = "Offered: KES ${link.offeredPricePerKg}/kg |Net Return: KES ${link.netReturnPerKg}/kg",
+                                                    fontSize = 14.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+
+                                                Text(
+                                                    text = "Location: ${link.location.ifBlank { "N/A" }}",
+                                                    fontSize = 14.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            db.collection("market_links")
+                                                                .document(link.id)
+                                                                .update("status", "Processing")
+                                                                .addOnSuccessListener {
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        "Marked as Processing",
+                                                                        Toast.LENGTH_SHORT
+                                                                    ).show()
+                                                                }
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        contentPadding = PaddingValues(0.dp)
+                                                    ) {
+                                                        Text(
+                                                            "Process",
+                                                            fontSize = 14.sp
+                                                        )
+                                                    }
+                                                    Button(
+                                                        onClick = {
+                                                            db.collection("market_links")
+                                                                .document(link.id)
+                                                                .update("status", "Completed")
+                                                                .addOnSuccessListener {
+                                                                    Toast.makeText(
+                                                                        context,
+                                                                        "Marked as Completed",
+                                                                        Toast.LENGTH_SHORT
+                                                                    ).show()
+                                                                }
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        colors = ButtonDefaults.buttonColors(
+                                                            containerColor = CoffeeGreen
+                                                        ),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        contentPadding = PaddingValues(0.dp)
+                                                    ) {
+                                                        Text(
+                                                            "Complete",
+                                                            fontSize = 14.sp
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
+
+
+
 
 
 
