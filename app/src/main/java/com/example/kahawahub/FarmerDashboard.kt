@@ -113,33 +113,23 @@ fun FarmerDashboard(
                 }
         }
     }
-    LaunchedEffect(Unit) {
+    DisposableEffect(Unit) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-        if (userId != null) {
-            val db = FirebaseFirestore.getInstance()
-
-            db.collection("farmers")
-                .document(userId)
-                .get()
-                .addOnSuccessListener { document ->
-
-                    cooperativeId = document.getString("cooperative_id")
-
-                    if (cooperativeId.isNullOrBlank()) {
-                        announcementsLoading = false
-                    }
-                }
-                .addOnFailureListener { exception ->
-                    announcementsLoading = false
-                    android.util.Log.e(
-                        "FarmerAnnouncements",
-                        "Error fetching cooperative ID",
-                        exception
-                    )
-                }
-        } else {
+        if (userId == null) {
             announcementsLoading = false
+            onDispose { }
+        } else {
+            val db = FirebaseFirestore.getInstance()
+            val listener = db.collection("farmers")
+                .document(userId)
+                .addSnapshotListener { document, _ ->
+                    if (document != null && document.exists()) {
+                        cooperativeId = document.getString("cooperative_id")
+                    }
+                    announcementsLoading = false
+                }
+            onDispose { listener.remove() }
         }
     }
 

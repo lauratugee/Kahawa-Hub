@@ -129,6 +129,7 @@ fun CoffeeMarketPricesPage(
     }
     DisposableEffect(cooperativeId) {
         if (cooperativeId.isNullOrBlank()) {
+            marketOffers = emptyList()
             onDispose { }
         } else {
             val listener = FirebaseFirestore.getInstance()
@@ -155,6 +156,8 @@ fun CoffeeMarketPricesPage(
                                 addedBy = document.getString("added_by") ?: ""
                             )
                         }
+                    } else {
+                        marketOffers = emptyList()
                     }
                 }
             onDispose { listener.remove() }

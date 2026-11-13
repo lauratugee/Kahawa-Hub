@@ -2683,10 +2683,14 @@ fun CooperativeDashboard(
                                 },
                                 text = {
                                     Column(
-                                        modifier = Modifier.fillMaxWidth()
-                                            .verticalScroll(rememberScrollState()),
+                                        modifier = Modifier.fillMaxWidth(),
                                         verticalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
+                                        Text(
+                                            text = "Enter essential market offer details. Standard transport and quantity defaults will apply automatically.",
+                                            fontSize = 12.sp,
+                                            color = Color.DarkGray
+                                        )
                                         OutlinedTextField(
                                             value = offerBuyerName,
                                             onValueChange = { offerBuyerName = it },
@@ -2698,7 +2702,7 @@ fun CooperativeDashboard(
                                         OutlinedTextField(
                                             value = offerCoffeeType,
                                             onValueChange = { offerCoffeeType = it },
-                                            label = { Text("Coffee Type") },
+                                            label = { Text("Coffee Type (e.g. Coffee Cherries)") },
                                             modifier = Modifier.fillMaxWidth(),
                                             singleLine = true,
                                             shape = RoundedCornerShape(10.dp)
@@ -2706,7 +2710,7 @@ fun CooperativeDashboard(
                                         OutlinedTextField(
                                             value = offerGrade,
                                             onValueChange = { offerGrade = it },
-                                            label = { Text("Grade/ Quality") },
+                                            label = { Text("Grade / Quality (e.g. AA)") },
                                             modifier = Modifier.fillMaxWidth(),
                                             singleLine = true,
                                             shape = RoundedCornerShape(10.dp)
@@ -2715,70 +2719,6 @@ fun CooperativeDashboard(
                                             value = offerPricePerKg,
                                             onValueChange = { offerPricePerKg = it },
                                             label = { Text("Offered price per kg (KES)") },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(10.dp)
-                                        )
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            OutlinedTextField(
-                                                value = offerMinQuantity,
-                                                onValueChange = { offerMinQuantity = it },
-                                                label = { Text("Min Quantity") },
-                                                modifier = Modifier.weight(1f),
-                                                singleLine = true,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                            OutlinedTextField(
-                                                value = offerMaxQuantity,
-                                                onValueChange = { offerMaxQuantity = it },
-                                                label = { Text("Max Quantity") },
-                                                modifier = Modifier.weight(1f),
-                                                singleLine = true,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                        }
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            OutlinedTextField(
-                                                value = offerTransportCosts,
-                                                onValueChange = {
-                                                    if (it.isEmpty() || it.all { ch -> ch.isDigit() || ch == '.' }) offerTransportCosts =
-                                                        it
-                                                },
-                                                label = { Text("Transport") },
-                                                modifier = Modifier.weight(1f),
-                                                singleLine = true,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                            OutlinedTextField(
-                                                value = offerOtherCosts,
-                                                onValueChange = {
-                                                    if (it.isEmpty() || it.all { ch -> ch.isDigit() || ch == '.' }) offerOtherCosts =
-                                                        it
-                                                },
-                                                label = { Text("Other Costs") },
-                                                modifier = Modifier.weight(1f),
-                                                singleLine = true,
-                                                shape = RoundedCornerShape(10.dp)
-                                            )
-                                        }
-                                        OutlinedTextField(
-                                            value = offerLocation,
-                                            onValueChange = { offerLocation = it },
-                                            label = { Text("Location") },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            singleLine = true,
-                                            shape = RoundedCornerShape(10.dp)
-                                        )
-                                        OutlinedTextField(
-                                            value = offerValidityDate,
-                                            onValueChange = { offerValidityDate = it },
-                                            label = { Text("Validity") },
                                             modifier = Modifier.fillMaxWidth(),
                                             singleLine = true,
                                             shape = RoundedCornerShape(10.dp)
@@ -2807,14 +2747,15 @@ fun CooperativeDashboard(
                                             val payload = hashMapOf(
                                                 "cooperative_id" to cooperativeId,
                                                 "buyer_name" to offerBuyerName,
-                                                "coffee_type" to offerCoffeeType,
-                                                "grade" to offerGrade,"offered_price_per_kg" to (offerPricePerKg.toDoubleOrNull() ?: 0.0),
-                                                "min_quantity" to (offerMinQuantity.toIntOrNull() ?: 0),
-                                                "max_quantity" to (offerMaxQuantity.toIntOrNull() ?: 0),
-                                                "transport_costs" to (offerTransportCosts.toDoubleOrNull() ?: 0.0),
-                                                "other_costs" to (offerOtherCosts.toDoubleOrNull() ?: 0.0),
-                                                "location" to offerLocation,
-                                                "validity_date" to offerValidityDate,
+                                                "coffee_type" to offerCoffeeType.ifBlank { "Coffee Cherries" },
+                                                "grade" to offerGrade.ifBlank { "AA" },
+                                                "offered_price_per_kg" to (offerPricePerKg.toDoubleOrNull() ?: 0.0),
+                                                "min_quantity" to (offerMinQuantity.toIntOrNull() ?: 50),
+                                                "max_quantity" to (offerMaxQuantity.toIntOrNull() ?: 5000),
+                                                "transport_costs" to (offerTransportCosts.toDoubleOrNull() ?: 10.0),
+                                                "other_costs" to (offerOtherCosts.toDoubleOrNull() ?: 5.0),
+                                                "location" to offerLocation.ifBlank { "Local Region" },
+                                                "validity_date" to offerValidityDate.ifBlank { "30 Days" },
                                                 "date_added" to System.currentTimeMillis()
                                             )
                                             db.collection("market_offers")

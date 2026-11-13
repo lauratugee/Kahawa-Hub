@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -38,7 +39,6 @@ data class CoffeeSupplyItem(
     val rejectionReason: String = ""
 )
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyCoffeeSupplyPage(
@@ -56,9 +56,6 @@ fun MyCoffeeSupplyPage(
 
     var submissions by remember { mutableStateOf<List<CoffeeSupplyItem>>(emptyList()) }
     var isSubmissionsLoading by remember { mutableStateOf(true) }
-
-
-
 
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
@@ -153,42 +150,35 @@ fun MyCoffeeSupplyPage(
                         value = selectedCoffeeType,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Select coffee type") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(
-                                expanded = coffeeTypeExpanded
-                            )
-                        },
+                        placeholder = { Text("Select coffee type") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = coffeeTypeExpanded) },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor()
+                            .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )
+
                     ExposedDropdownMenu(
                         expanded = coffeeTypeExpanded,
-                        onDismissRequest = {
-                            coffeeTypeExpanded = false
-                        }
+                        onDismissRequest = { coffeeTypeExpanded = false }
                     ) {
-                        listOf(
-                            "Coffee Cherries",
-                            "Mbuni",
-                            "Pulped Coffee"
-                        ).forEach { coffeeType ->
+                        val coffeeTypes = listOf("Coffee Cherries", "Mbuni", "Pulped Coffee")
+                        coffeeTypes.forEach { type ->
                             DropdownMenuItem(
-                                text = { Text(coffeeType) },
+                                text = { Text(type) },
                                 onClick = {
-                                    selectedCoffeeType = coffeeType
+                                    selectedCoffeeType = type
                                     coffeeTypeExpanded = false
                                 }
                             )
                         }
                     }
                 }
+
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Quantity Available",
+                    text = "Quantity (kg)",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = SupplyBrown
@@ -202,101 +192,54 @@ fun MyCoffeeSupplyPage(
                             quantity = newValue
                         }
                     },
-                    label = { Text("Enter quantity in kgs") },
-                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("e.g. 500") },
                     singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Button(
                     onClick = {
-                        val currentUserId = auth.currentUser?.uid
-                        val quantityValue = quantity.toIntOrNull()
-
-                        if (currentUserId == null) {
-                            submissionMessage = "Please log in first"
-                            isSuccessMessage = false
-                        } else if (selectedCoffeeType.isBlank()) {
-                            submissionMessage = "Please select a coffee type"
-                            isSuccessMessage = false
-                        } else if (quantityValue == null || quantityValue <= 0) {
-                            submissionMessage = "Please enter a valid quantity in kgs"
-                            isSuccessMessage = false
-                        } else {
-                            isSubmitting = true
-                            submissionMessage = ""
-
-                            // 1. Fetch farmer profile to verify membership in a cooperative (required by Firestore rules)
-                            db.collection("farmers").document(currentUserId).get()
-                                .addOnSuccessListener { farmerDoc ->
-                                    val activeCooperativeId = farmerDoc.getString("cooperative_id")
-                                        ?: cooperativeId
-                                        ?: ""
-
-                                    if (!farmerDoc.exists() || activeCooperativeId.isBlank()) {
-                                        isSubmitting = false
-                                        submissionMessage = "Please join a cooperative first before submitting coffee supply."
-                                        isSuccessMessage = false
-                                        Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
-                                        return@addOnSuccessListener
-                                    }
-
-                                    // 2. Fetch user details for metadata
-                                    db.collection("users").document(currentUserId).get()
-                                        .addOnCompleteListener { userTask ->
-                                            val userDoc = if (userTask.isSuccessful) userTask.result else null
-                                            val farmerName = userDoc?.getString("name")
-                                                ?: userDoc?.getString("full_name")
-                                                ?: auth.currentUser?.displayName
-                                                ?: "Farmer"
-
-                                            // 3. Build submission payload matching Firestore Security Rules:
-                                            // - farmer_id == auth.uid
-                                            // - cooperative_id == farmers/{uid}.cooperative_id
-                                            // - status == "Pending"
-                                            // - quantity_kg is int && quantity_kg > 0
-                                            val submission = hashMapOf(
-                                                "farmer_id" to currentUserId,
-                                                "farmer_name" to farmerName,
-                                                "cooperative_id" to activeCooperativeId,
-                                                "coffee_type" to selectedCoffeeType,
-                                                "quantity_kg" to quantityValue,
-                                                "county" to (userDoc?.getString("county") ?: ""),
-                                                "sub_county" to (userDoc?.getString("sub_county") ?: ""),
-                                                "status" to "Pending",
-                                                "date_submitted" to System.currentTimeMillis()
-                                            )
-
-                                            db.collection("coffee_supply_submissions")
-                                                .add(submission)
-                                                .addOnSuccessListener {
-                                                    isSubmitting = false
-                                                    submissionMessage = "Coffee supply submitted successfully!"
-                                                    isSuccessMessage = true
-                                                    Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
-
-                                                    // Clear inputs on success
-                                                    selectedCoffeeType = ""
-                                                    quantity = ""
-                                                }
-                                                .addOnFailureListener { error ->
-                                                    Log.e("KahawaSupply", "Failed to write submission to Firestore", error)
-                                                    isSubmitting = false
-                                                    submissionMessage = "Failed to submit: ${error.localizedMessage}"
-                                                    isSuccessMessage = false
-                                                    Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
-                                                }
-                                        }
-                                }
-                                .addOnFailureListener { error ->
-                                    Log.e("KahawaSupply", "Failed to fetch farmer profile", error)
-                                    isSubmitting = false
-                                    submissionMessage = "Failed to verify membership: ${error.localizedMessage}"
-                                    isSuccessMessage = false
-                                    Toast.makeText(context, submissionMessage, Toast.LENGTH_LONG).show()
-                                }
+                        val kg = quantity.toIntOrNull() ?: 0
+                        if (selectedCoffeeType.isBlank() || kg <= 0) {
+                            Toast.makeText(context, "Please select coffee type and enter valid quantity", Toast.LENGTH_SHORT).show()
+                            return@Button
                         }
+
+                        if (userId == null) {
+                            Toast.makeText(context, "Please log in first", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        isSubmitting = true
+                        submissionMessage = ""
+
+                        val submissionData = hashMapOf(
+                            "farmer_id" to userId,
+                            "farmer_name" to (auth.currentUser?.displayName ?: "Farmer"),
+                            "coffee_type" to selectedCoffeeType,
+                            "quantity_kg" to kg,
+                            "status" to "Pending",
+                            "date_submitted" to System.currentTimeMillis(),
+                            "cooperative_id" to (cooperativeId ?: "")
+                        )
+
+                        db.collection("coffee_supply_submissions")
+                            .add(submissionData)
+                            .addOnSuccessListener {
+                                isSubmitting = false
+                                isSuccessMessage = true
+                                submissionMessage = "Supply submitted successfully!"
+                                selectedCoffeeType = ""
+                                quantity = ""
+                            }
+                            .addOnFailureListener { e ->
+                                isSubmitting = false
+                                isSuccessMessage = false
+                                submissionMessage = "Submission failed: ${e.localizedMessage}"
+                            }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -367,7 +310,7 @@ fun MyCoffeeSupplyPage(
             submissions.forEach { item ->
                 Card(
                     modifier = Modifier.fillMaxWidth()
-                        .padding(bottom = 10.dp),
+                        .padding(bottom = 12.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -404,7 +347,7 @@ fun MyCoffeeSupplyPage(
 
                             // Status Tag
                             val (statusBg, statusFg) = when (item.status.lowercase()) {
-                                "approved", "accepted" -> Color(0xFFC8E6C9) to SupplyGreen
+                                "verified", "accepted - bring to coop", "milled & settled" -> Color(0xFFC8E6C9) to SupplyGreen
                                 "rejected" -> Color(0xFFFFCDD2) to SupplyRed
                                 else -> Color(0xFFFFE0B2) to SupplyOrange
                             }
@@ -427,6 +370,9 @@ fun MyCoffeeSupplyPage(
                             }
                         }
 
+                        // Visual Progress Stepper
+                        SupplyProgressStepper(status = item.status)
+
                         if (item.status.lowercase() == "rejected" && item.rejectionReason.isNotBlank()) {
                             Spacer(modifier = Modifier.height(12.dp))
                             HorizontalDivider(color = Color(0xFFFFCDD2), thickness = 1.dp)
@@ -440,6 +386,50 @@ fun MyCoffeeSupplyPage(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SupplyProgressStepper(status: String) {
+    val statusLower = status.lowercase()
+    val steps = listOf("Declared", "Delivery", "Gate Verified", "Settled")
+    val currentStep = when {
+        statusLower.contains("milled") || statusLower.contains("settled") -> 4
+        statusLower.contains("verified") -> 3
+        statusLower.contains("accepted") || statusLower.contains("brought") -> 2
+        statusLower.contains("rejected") -> -1
+        else -> 1 // Pending / Declared
+    }
+
+    if (currentStep == -1) {
+        return
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        steps.forEachIndexed { index, stepName ->
+            val stepNumber = index + 1
+            val isCompleted = stepNumber <= currentStep
+            val color = if (isCompleted) SupplyGreen else Color.LightGray
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Surface(
+                    shape = CircleShape,
+                    color = color,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(text = "$stepNumber", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = stepName, fontSize = 10.sp, color = if (isCompleted) SupplyBrown else Color.Gray)
             }
         }
     }
