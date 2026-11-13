@@ -141,6 +141,58 @@ fun CooperativeDashboard(
     var marketLinks by remember { mutableStateOf<List<MarketLinkItem>>(emptyList()) }
     var isLinksLoading by remember { mutableStateOf(true) }
 
+    var selectedSubmissionForMilling by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var millGradeAA by remember { mutableStateOf("") }
+    var millGradeAB by remember { mutableStateOf("") }
+    var millGradePB by remember { mutableStateOf("") }
+    var millGradeC by remember { mutableStateOf("") }
+    var pricePerAA by remember { mutableStateOf("130.0") }
+    var pricePerAB by remember { mutableStateOf("110.0") }
+    var pricePerPB by remember { mutableStateOf("95.0") }
+    var pricePerC by remember { mutableStateOf("80.0") }
+
+    var coopName by remember { mutableStateOf("Cooperative Society") }
+    var coopLocation by remember { mutableStateOf("Location not specified") }
+    var coopDescription by remember { mutableStateOf("No description provided.") }
+    var coopServices by remember { mutableStateOf("No services listed.") }
+    var coopMembership by remember { mutableStateOf("No membership info provided.") }
+    var coopContact by remember { mutableStateOf("No contact info provided.") }
+    var showEditCoopDialog by remember { mutableStateOf(false) }
+
+    var editName by remember { mutableStateOf("") }
+    var editLocation by remember { mutableStateOf("") }
+    var editDescription by remember { mutableStateOf("") }
+    var editServices by remember { mutableStateOf("") }
+    var editMembership by remember { mutableStateOf("") }
+    var editContact by remember { mutableStateOf("") }
+
+    LaunchedEffect(cooperativeId) {
+        if (cooperativeId != null) {
+            db.collection("cooperatives")
+                .document(cooperativeId)
+                .addSnapshotListener { document, _ ->
+                    if (document != null && document.exists()) {
+                        coopName = document.getString("name") ?: document.getString("cooperative_name") ?: "Cooperative Society"
+                        coopLocation = document.getString("location") ?: "Location not specified"
+                        coopDescription = document.getString("description") ?: "No description provided."
+
+                        val rawServices = document.get("services")
+                        coopServices = when (rawServices) {
+                            is List<*> -> rawServices.joinToString("\n• ", prefix = "• ")
+                            is String -> rawServices
+                            else -> "No services listed."
+                        }
+
+                        coopMembership = document.getString("membership_info") ?: document.getString("membership_requirements") ?: "No membership info provided."
+
+                        val phone = document.getString("contact_number") ?: document.getString("phone") ?: ""
+                        val email = document.getString("email") ?: ""
+                        coopContact = "Phone: $phone\nEmail: $email"
+                    }
+                }
+        }
+    }
+
 
 
     LaunchedEffect(Unit) {
@@ -559,19 +611,46 @@ fun CooperativeDashboard(
                         }
                         Spacer(modifier = Modifier.height(48.dp))
 
-                        Text(
-                            text = "Welcome, ${userName}",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = CoffeeBrown
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = coopName,
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoffeeBrown
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "📍 $coopLocation",
+                                    fontSize = 14.sp,
+                                    color = CoffeeGreen
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Button(
+                                onClick = {
+                                    editName = coopName
+                                    editLocation = coopLocation
+                                    editDescription = coopDescription
+                                    editServices = coopServices
+                                    editMembership = coopMembership
+                                    editContact = coopContact
+                                    showEditCoopDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text("Edit Details", maxLines = 1, fontSize = 13.sp)
+                            }
+                        }
 
-                        Text(
-                            text = "Cooperative location",
-                            fontSize = 14.sp,
-                            color = CoffeeGreen
-                        )
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
@@ -581,17 +660,18 @@ fun CooperativeDashboard(
                             color = CoffeeBrown
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-
                         Text(
-                            text = "Description of the cooperative",
+                            text = coopDescription,
                             fontSize = 14.sp,
                             color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
+
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 18.dp),
-                            color = Color.Gray
+                            color = Color.LightGray
                         )
+
                         Text(
                             text = "Our Services",
                             fontSize = 19.sp,
@@ -599,17 +679,18 @@ fun CooperativeDashboard(
                             color = CoffeeBrown
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-
                         Text(
-                            text = "Services offered will be displayed here",
+                            text = coopServices,
                             fontSize = 14.sp,
                             color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
+
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 18.dp),
                             color = Color.LightGray
                         )
+
                         Text(
                             text = "Membership Information",
                             fontSize = 19.sp,
@@ -617,17 +698,18 @@ fun CooperativeDashboard(
                             color = CoffeeBrown
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-
                         Text(
-                            text = "Information about the cooperative members will be displayed here",
+                            text = coopMembership,
                             fontSize = 14.sp,
                             color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
+
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = 18.dp),
                             color = Color.LightGray
                         )
+
                         Text(
                             text = "Contact Details",
                             fontSize = 19.sp,
@@ -635,15 +717,119 @@ fun CooperativeDashboard(
                             color = CoffeeBrown
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-
                         Text(
-                            text = "Contact information for the cooperative will be displayed here",
+                            text = coopContact,
                             fontSize = 14.sp,
                             color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
                     }
 
+                    if (showEditCoopDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showEditCoopDialog = false },
+                            title = {
+                                Text(
+                                    text = "Edit Cooperative Details",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoffeeBrown
+                                )
+                            },
+                            text = {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .verticalScroll(rememberScrollState()),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = editName,
+                                        onValueChange = { editName = it },
+                                        label = { Text("Cooperative Name") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = editLocation,
+                                        onValueChange = { editLocation = it },
+                                        label = { Text("Location / Region") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = editDescription,
+                                        onValueChange = { editDescription = it },
+                                        label = { Text("About Us (Description)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 3,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = editServices,
+                                        onValueChange = { editServices = it },
+                                        label = { Text("Our Services") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 3,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = editMembership,
+                                        onValueChange = { editMembership = it },
+                                        label = { Text("Membership Information") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 3,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = editContact,
+                                        onValueChange = { editContact = it },
+                                        label = { Text("Contact Details") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        minLines = 2,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        if (cooperativeId != null) {
+                                            val updates = mapOf(
+                                                "name" to editName,
+                                                "location" to editLocation,
+                                                "description" to editDescription,
+                                                "services" to editServices,
+                                                "membership_info" to editMembership,
+                                                "contact_info" to editContact
+                                            )
+                                            db.collection("cooperatives")
+                                                .document(cooperativeId)
+                                                .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                                                .addOnSuccessListener {
+                                                    Toast.makeText(context, "Cooperative details updated!", Toast.LENGTH_SHORT).show()
+                                                    showEditCoopDialog = false
+                                                }
+                                                .addOnFailureListener { e ->
+                                                    Toast.makeText(context, "Failed to update: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text("Save Changes")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showEditCoopDialog = false }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
+                    }
                 }
 
                 1 -> {
@@ -963,14 +1149,31 @@ fun CooperativeDashboard(
                                                             item["rejection_reason"] as? String
                                                                 ?: ""
                                                     },
-                                                    modifier = Modifier.width(75.dp).height(32.dp)
-                                                        .padding(start = 6.dp),
+                                                    modifier = Modifier.width(70.dp).height(32.dp)
+                                                        .padding(start = 4.dp),
                                                     colors = ButtonDefaults.buttonColors(
                                                         containerColor = CoffeeGreen
                                                     ),
-                                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                                    contentPadding = PaddingValues(horizontal = 2.dp)
                                                 ) {
                                                     Text("Review", fontSize = 11.sp)
+                                                }
+
+                                                if (status.equals("Verified", ignoreCase = true) || status.equals("Milled & Settled", ignoreCase = true)) {
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            selectedSubmissionForMilling = item
+                                                            millGradeAA = ""
+                                                            millGradeAB = ""
+                                                            millGradePB = ""
+                                                            millGradeC = ""
+                                                        },
+                                                        modifier = Modifier.width(55.dp).height(32.dp),
+                                                        contentPadding = PaddingValues(horizontal = 2.dp)
+                                                    ) {
+                                                        Text("Mill", fontSize = 11.sp, color = CoffeeBrown)
+                                                    }
                                                 }
                                             }
                                             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
@@ -1069,6 +1272,51 @@ fun CooperativeDashboard(
                                     ) {
                                         Button(
                                             onClick = {
+                                                val updateData = mutableMapOf<String, Any>(
+                                                    "status" to "Accepted - Bring to Coop",
+                                                    "reviewed_by" to userName,
+                                                    "reviewed_at" to System.currentTimeMillis()
+                                                )
+
+                                                db.collection("coffee_supply_submissions")
+                                                    .document(submissionId)
+                                                    .update(updateData)
+                                                    .addOnSuccessListener {
+                                                        if (cooperativeId != null) {
+                                                            db.collection("announcements").add(
+                                                                hashMapOf(
+                                                                    "cooperative_id" to cooperativeId,
+                                                                    "title" to "Supply Volume Accepted - Bring to Cooperative",
+                                                                    "message" to "Your coffee supply volume request has been accepted by the cooperative. Please bring your coffee delivery to the cooperative office for physical check.",
+                                                                    "date_posted" to System.currentTimeMillis()
+                                                                )
+                                                            )
+                                                        }
+
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Volume accepted. Delivery requested.",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                        selectedSubmittedForReview = null
+                                                    }
+                                                    .addOnFailureListener { error ->
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Failed: ${error.localizedMessage}",
+                                                            Toast.LENGTH_LONG
+                                                        ).show()
+                                                    }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Text("1. Accept Volume & Request Delivery")
+                                        }
+
+                                        Button(
+                                            onClick = {
                                                 val verifiedQty =
                                                     verifiedQuantityInput.toLongOrNull()
                                                         ?: declaredQuantity
@@ -1086,13 +1334,12 @@ fun CooperativeDashboard(
                                                     .document(submissionId)
                                                     .update(updateData)
                                                     .addOnSuccessListener {
-                                                        // Automatically post announcement upon quality approval
                                                         if (cooperativeId != null) {
                                                             db.collection("announcements").add(
                                                                 hashMapOf(
                                                                     "cooperative_id" to cooperativeId,
-                                                                    "title" to "Coffee Supply Quality Approved!",
-                                                                    "message" to "Your supply submission of ${verifiedQty}kg has passed factory/buyer quality inspection (Grade: $gradeInput) and been fully approved.",
+                                                                    "title" to "Coffee Supply Gate Verified!",
+                                                                    "message" to "Your coffee delivery has been physically received and verified at the cooperative gate (Grade: $gradeInput).",
                                                                     "date_posted" to System.currentTimeMillis()
                                                                 )
                                                             )
@@ -1100,7 +1347,7 @@ fun CooperativeDashboard(
 
                                                         Toast.makeText(
                                                             context,
-                                                            "Volume accepted & quality approved!",
+                                                            "Gate Verified successfully!",
                                                             Toast.LENGTH_SHORT
                                                         ).show()
                                                         selectedSubmittedForReview = null
@@ -1117,7 +1364,7 @@ fun CooperativeDashboard(
                                             colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
                                             shape = RoundedCornerShape(10.dp)
                                         ) {
-                                            Text("🟢 Accept Volume & Approve Quality")
+                                            Text("2. Gate Verified & Quality Passed")
                                         }
 
                                         Row(
@@ -1225,6 +1472,134 @@ fun CooperativeDashboard(
                                                 fontWeight = FontWeight.SemiBold
                                             )
                                         }
+                                    }
+                                }
+                            )
+                        }
+
+                        if (selectedSubmissionForMilling != null) {
+                            val millItem = selectedSubmissionForMilling!!
+                            val millSubId = millItem["id"] as? String ?: ""
+                            val farmerName = millItem["farmer_name"] as? String ?: "Farmer"
+
+                            AlertDialog(
+                                onDismissRequest = { selectedSubmissionForMilling = null },
+                                title = {
+                                    Text(
+                                        text = "Factory Milling & Final Settlement",
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = CoffeeBrown
+                                    )
+                                },
+                                text = {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .verticalScroll(rememberScrollState()),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Text(text = "Farmer: $farmerName", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = CoffeeGreen)
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Text("Enter Milled Output Quantities (kg):", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CoffeeBrown)
+
+                                        OutlinedTextField(
+                                            value = millGradeAA,
+                                            onValueChange = { millGradeAA = it },
+                                            label = { Text("Grade AA Output (kg)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = millGradeAB,
+                                            onValueChange = { millGradeAB = it },
+                                            label = { Text("Grade AB Output (kg)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = millGradePB,
+                                            onValueChange = { millGradePB = it },
+                                            label = { Text("Grade PB Output (kg)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        OutlinedTextField(
+                                            value = millGradeC,
+                                            onValueChange = { millGradeC = it },
+                                            label = { Text("Grade C Output (kg)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text("Grade Pricing (KES per kg):", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CoffeeBrown)
+
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            OutlinedTextField(value = pricePerAA, onValueChange = { pricePerAA = it }, label = { Text("AA Price") }, modifier = Modifier.weight(1f), singleLine = true)
+                                            OutlinedTextField(value = pricePerAB, onValueChange = { pricePerAB = it }, label = { Text("AB Price") }, modifier = Modifier.weight(1f), singleLine = true)
+                                        }
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            OutlinedTextField(value = pricePerPB, onValueChange = { pricePerPB = it }, label = { Text("PB Price") }, modifier = Modifier.weight(1f), singleLine = true)
+                                            OutlinedTextField(value = pricePerC, onValueChange = { pricePerC = it }, label = { Text("C Price") }, modifier = Modifier.weight(1f), singleLine = true)
+                                        }
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            val aaKg = millGradeAA.toLongOrNull() ?: 0L
+                                            val abKg = millGradeAB.toLongOrNull() ?: 0L
+                                            val pbKg = millGradePB.toLongOrNull() ?: 0L
+                                            val cKg = millGradeC.toLongOrNull() ?: 0L
+
+                                            val pAA = pricePerAA.toDoubleOrNull() ?: 130.0
+                                            val pAB = pricePerAB.toDoubleOrNull() ?: 110.0
+                                            val pPB = pricePerPB.toDoubleOrNull() ?: 95.0
+                                            val pC = pricePerC.toDoubleOrNull() ?: 80.0
+
+                                            val totalPayout = (aaKg * pAA) + (abKg * pAB) + (pbKg * pPB) + (cKg * pC)
+
+                                            val millingReport = mapOf(
+                                                "grade_aa_kg" to aaKg,
+                                                "grade_ab_kg" to abKg,
+                                                "grade_pb_kg" to pbKg,
+                                                "grade_c_kg" to cKg,
+                                                "total_payout_kes" to totalPayout,
+                                                "milled_at" to System.currentTimeMillis()
+                                            )
+
+                                            db.collection("coffee_supply_submissions")
+                                                .document(millSubId)
+                                                .update(
+                                                    mapOf(
+                                                        "factory_milling_report" to millingReport,
+                                                        "final_payout_amount" to totalPayout,
+                                                        "status" to "Milled & Settled"
+                                                    )
+                                                )
+                                                .addOnSuccessListener {
+                                                    Toast.makeText(context, "Final Settlement Payout Generated: KES %.2f".format(totalPayout), Toast.LENGTH_LONG).show()
+                                                    selectedSubmissionForMilling = null
+                                                }
+                                                .addOnFailureListener { e ->
+                                                    Toast.makeText(context, "Failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                                }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                        shape = RoundedCornerShape(10.dp)
+                                    ) {
+                                        Text("Calculate & Generate Payout")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { selectedSubmissionForMilling = null }) {
+                                        Text("Cancel")
                                     }
                                 }
                             )
@@ -1721,25 +2096,10 @@ fun CooperativeDashboard(
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Manage factories and buyers",
+                                    text = "Manage factories, buyers, and linkage requests",
                                     fontSize = 14.sp,
                                     color = Color.DarkGray
                                 )
-                            }
-                            Button(
-                                onClick = {
-                                    if (marketManagementTab == 0) {
-                                        showAddFactoryDialog = true
-                                    } else {
-                                        showAddOfferDialog = true
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = CoffeeGreen
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(if (marketManagementTab == 0) "Add Factory" else "Add Offer")
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -1753,7 +2113,7 @@ fun CooperativeDashboard(
                                 onClick = {
                                     marketManagementTab = 0
                                 },
-                                label = { Text("Factories and Buyers") },
+                                label = { Text("Factories & Buyers") },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = CoffeeGreen,
                                     selectedLabelColor = Color.White
@@ -1765,6 +2125,17 @@ fun CooperativeDashboard(
                                     marketManagementTab = 1
                                 },
                                 label = { Text("Offers (${marketOffers.size})") },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = CoffeeGreen,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                            FilterChip(
+                                selected = marketManagementTab == 2,
+                                onClick = {
+                                    marketManagementTab = 2
+                                },
+                                label = { Text("Requests (${marketLinks.size})") },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = CoffeeGreen,
                                     selectedLabelColor = Color.White

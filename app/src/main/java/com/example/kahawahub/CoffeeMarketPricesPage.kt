@@ -439,7 +439,7 @@ fun CoffeeMarketPricesPage(
                                             )
                                             val existingRequest = myLinkageRequests.find { req ->
                                                 val reqBuyer = (req["buyer_name"] as? String) ?: ""
-                                                reqBuyer.equals(rec.buyerName, ignoreCase = true)
+                                                reqBuyer.isNotBlank() && reqBuyer.equals(rec.buyerName, ignoreCase = true)
                                             }
 
                                             if (existingRequest != null) {

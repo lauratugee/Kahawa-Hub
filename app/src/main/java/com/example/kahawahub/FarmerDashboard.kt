@@ -270,7 +270,8 @@ fun FarmerDashboard(
                         .fillMaxSize()
                         .background(FarmerCream)
                         .padding(innerPadding)
-                        .padding(20.dp),
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.Start
                 ) {
 
