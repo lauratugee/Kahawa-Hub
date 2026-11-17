@@ -36,7 +36,9 @@ data class CoffeeSupplyItem(
     val status: String = "Pending",
     val dateSubmitted: Long = 0L,
     val cooperativeId: String = "",
-    val rejectionReason: String = ""
+    val rejectionReason: String = "",
+    val factoryMillingReport: Map<String, Any>? = null,
+    val finalPayoutAmount: Double = 0.0
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,7 +84,9 @@ fun MyCoffeeSupplyPage(
                                 status = doc.getString("status") ?: "Pending",
                                 dateSubmitted = doc.getLong("date_submitted") ?: 0L,
                                 cooperativeId = doc.getString("cooperative_id") ?: "",
-                                rejectionReason = doc.getString("rejection_reason") ?: ""
+                                rejectionReason = doc.getString("rejection_reason") ?: "",
+                                factoryMillingReport = doc.get("factory_milling_report") as? Map<String, Any>,
+                                finalPayoutAmount = doc.getDouble("final_payout_amount") ?: 0.0
                             )
                         }.sortedByDescending { it.dateSubmitted }
                     }
@@ -372,6 +376,50 @@ fun MyCoffeeSupplyPage(
 
                         // Visual Progress Stepper
                         SupplyProgressStepper(status = item.status)
+
+                        // Factory Milling & Final Payout Report
+                        if (item.status.lowercase().contains("milled") || item.finalPayoutAmount > 0.0) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = Color(0xFFC8E6C9), thickness = 1.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = "🏭 Factory Milling & Settlement Report",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SupplyGreen
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    val report = item.factoryMillingReport
+                                    if (report != null) {
+                                        val aa = report["grade_aa_kg"] as? Long ?: 0L
+                                        val ab = report["grade_ab_kg"] as? Long ?: 0L
+                                        val pb = report["grade_pb_kg"] as? Long ?: 0L
+                                        val c = report["grade_c_kg"] as? Long ?: 0L
+
+                                        Text(text = "• Grade AA: $aa kg", fontSize = 12.sp, color = Color.DarkGray)
+                                        Text(text = "• Grade AB: $ab kg", fontSize = 12.sp, color = Color.DarkGray)
+                                        Text(text = "• Grade PB: $pb kg", fontSize = 12.sp, color = Color.DarkGray)
+                                        Text(text = "• Grade C: $c kg", fontSize = 12.sp, color = Color.DarkGray)
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                    }
+
+                                    Text(
+                                        text = "Final Payout: KES %.2f".format(item.finalPayoutAmount),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = SupplyGreen
+                                    )
+                                }
+                            }
+                        }
 
                         if (item.status.lowercase() == "rejected" && item.rejectionReason.isNotBlank()) {
                             Spacer(modifier = Modifier.height(12.dp))
