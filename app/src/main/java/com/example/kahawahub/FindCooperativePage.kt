@@ -39,7 +39,7 @@ data class Cooperative(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FindCooperativePage(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit = {}
 ) {
     var cooperatives by remember { mutableStateOf<List<Cooperative>>(emptyList()) }
     var farmerCooperativeId by remember { mutableStateOf<String?>(null) }
@@ -101,15 +101,6 @@ fun FindCooperativePage(
             .background(CooperativeCream)
             .padding(20.dp)
     ) {
-        Button(
-            onClick = { onBackClick() },
-            colors = ButtonDefaults.buttonColors(containerColor = CooperativeGreen),
-            shape = RoundedCornerShape(10.dp)
-        ) {
-            Text(text = "Back", color = Color.White)
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-
         Text(
             text = "Find a cooperative",
             fontSize = 20.sp,
