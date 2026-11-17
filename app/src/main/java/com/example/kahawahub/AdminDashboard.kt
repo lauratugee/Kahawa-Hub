@@ -1,6 +1,7 @@
 package com.example.kahawahub
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,33 +34,53 @@ fun AdminDashboard(
     var totalCompletedLinks by remember { mutableStateOf(0) }
 
     var cooperativesList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var farmersList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var submissionsList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var salesList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+
     var isLoading by remember { mutableStateOf(true) }
 
-    // Fetch platform statistics and cooperatives in real time using Firestore listeners
+    // Drill-down dialog state: null, "cooperatives", "farmers", "submissions", "sales"
+    var selectedDrillDownView by remember { mutableStateOf<String?>(null) }
+
+    // Fetch platform statistics and drill-down lists in real time using Firestore listeners
     LaunchedEffect(Unit) {
-        // 1. Listen to cooperatives count & list
+        // 1. Listen to cooperatives
         db.collection("cooperatives")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
                     totalCooperatives = snapshot.size()
-                    cooperativesList = snapshot.documents.map { it.data ?: emptyMap() }
+                    cooperativesList = snapshot.documents.map { doc ->
+                        val map = doc.data?.toMutableMap() ?: mutableMapOf()
+                        map["id"] = doc.id
+                        map
+                    }
                 }
             }
 
-        // 2. Listen to farmers count
+        // 2. Listen to farmers
         db.collection("farmers")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
                     totalFarmers = snapshot.size()
+                    farmersList = snapshot.documents.map { doc ->
+                        val map = doc.data?.toMutableMap() ?: mutableMapOf()
+                        map["id"] = doc.id
+                        map
+                    }
                 }
             }
 
-        // 3. Listen to supply submissions for total volume
+        // 3. Listen to supply submissions
         db.collection("coffee_supply_submissions")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
-                    totalVolumeSubmittedKg = snapshot.documents
-                        .sumOf { it.getLong("quantity_kg") ?: 0L }
+                    submissionsList = snapshot.documents.map { doc ->
+                        val map = doc.data?.toMutableMap() ?: mutableMapOf()
+                        map["id"] = doc.id
+                        map
+                    }
+                    totalVolumeSubmittedKg = submissionsList.sumOf { (it["quantity_kg"] as? Long) ?: 0L }
                 }
             }
 
@@ -67,8 +88,13 @@ fun AdminDashboard(
         db.collection("market_links")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
-                    totalCompletedLinks = snapshot.documents
-                        .count { (it.getString("status") ?: "").equals("Completed", ignoreCase = true) }
+                    val allLinks = snapshot.documents.map { doc ->
+                        val map = doc.data?.toMutableMap() ?: mutableMapOf()
+                        map["id"] = doc.id
+                        map
+                    }
+                    salesList = allLinks.filter { (it["status"] as? String ?: "").equals("Completed", ignoreCase = true) }
+                    totalCompletedLinks = salesList.size
                     isLoading = false
                 }
             }
@@ -97,7 +123,7 @@ fun AdminDashboard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "System-wide oversight & platform analytics",
+                    text = "Tap any card below to view detailed records",
                     fontSize = 13.sp,
                     color = Color.DarkGray
                 )
@@ -121,19 +147,21 @@ fun AdminDashboard(
                 CircularProgressIndicator(color = AdminGreen)
             }
         } else {
-            // Platform Overview Statistics Cards (Responsive Grid / Row arrangement)
+            // Interactive Platform Overview Statistics Cards (Tap to Drill Down)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Card(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedDrillDownView = "cooperatives" },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = AdminCardBg),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Text(text = "Cooperatives", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = "Cooperatives 📋", fontSize = 12.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "$totalCooperatives",
@@ -141,17 +169,21 @@ fun AdminDashboard(
                             fontWeight = FontWeight.Bold,
                             color = AdminGreen
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Tap to view list", fontSize = 10.sp, color = Color.DarkGray)
                     }
                 }
 
                 Card(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedDrillDownView = "farmers" },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = AdminCardBg),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Text(text = "Active Farmers", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = "Active Farmers 👥", fontSize = 12.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "$totalFarmers",
@@ -159,6 +191,8 @@ fun AdminDashboard(
                             fontWeight = FontWeight.Bold,
                             color = AdminBrown
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Tap to view list", fontSize = 10.sp, color = Color.DarkGray)
                     }
                 }
             }
@@ -168,13 +202,15 @@ fun AdminDashboard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Card(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedDrillDownView = "submissions" },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = AdminCardBg),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Text(text = "Total Volume", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = "Total Volume 🌾", fontSize = 12.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "%,d kg".format(totalVolumeSubmittedKg),
@@ -182,17 +218,21 @@ fun AdminDashboard(
                             fontWeight = FontWeight.Bold,
                             color = AdminGreen
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Tap to view submissions", fontSize = 10.sp, color = Color.DarkGray)
                     }
                 }
 
                 Card(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { selectedDrillDownView = "sales" },
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = AdminCardBg),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
-                        Text(text = "Completed Sales", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = "Completed Sales 🤝", fontSize = 12.sp, color = Color.Gray)
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "$totalCompletedLinks",
@@ -200,6 +240,8 @@ fun AdminDashboard(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF1976D2)
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Tap to view sales", fontSize = 10.sp, color = Color.DarkGray)
                     }
                 }
             }
@@ -266,5 +308,128 @@ fun AdminDashboard(
                 }
             }
         }
+    }
+
+    // Drill-Down Dialog for Statistics Cards
+    if (selectedDrillDownView != null) {
+        AlertDialog(
+            onDismissRequest = { selectedDrillDownView = null },
+            title = {
+                Text(
+                    text = when (selectedDrillDownView) {
+                        "cooperatives" -> "Registered Cooperatives ($totalCooperatives)"
+                        "farmers" -> "Registered Farmers ($totalFarmers)"
+                        "submissions" -> "Coffee Supply Submissions"
+                        "sales" -> "Completed Market Sales ($totalCompletedLinks)"
+                        else -> "Details"
+                    },
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AdminBrown
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(350.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    when (selectedDrillDownView) {
+                        "cooperatives" -> {
+                            if (cooperativesList.isEmpty()) {
+                                Text("No cooperatives found.", color = Color.Gray, fontSize = 13.sp)
+                            } else {
+                                cooperativesList.forEach { coop ->
+                                    val name = coop["name"] as? String ?: coop["cooperative_name"] as? String ?: "Cooperative"
+                                    val loc = coop["location"] as? String ?: "N/A"
+                                    val phone = coop["phone"] as? String ?: coop["contact_number"] as? String ?: "N/A"
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(text = name, fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 14.sp)
+                                            Text(text = "Location: $loc | Phone: $phone", fontSize = 12.sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        "farmers" -> {
+                            if (farmersList.isEmpty()) {
+                                Text("No registered farmers found.", color = Color.Gray, fontSize = 13.sp)
+                            } else {
+                                farmersList.forEach { farmer ->
+                                    val farmerId = farmer["farmer_id"] as? String ?: farmer["user_id"] as? String ?: "ID"
+                                    val coopId = farmer["cooperative_id"] as? String ?: "Unassigned"
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(text = "Farmer ID: ${farmerId.takeLast(8)}...", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
+                                            Text(text = "Cooperative ID: ${if (coopId.length > 8) coopId.takeLast(8) else coopId}", fontSize = 12.sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        "submissions" -> {
+                            if (submissionsList.isEmpty()) {
+                                Text("No coffee supply submissions found.", color = Color.Gray, fontSize = 13.sp)
+                            } else {
+                                submissionsList.forEach { sub ->
+                                    val farmerName = sub["farmer_name"] as? String ?: "Farmer"
+                                    val coffeeType = sub["coffee_type"] as? String ?: "Coffee"
+                                    val qty = sub["quantity_kg"] as? Long ?: 0L
+                                    val status = sub["status"] as? String ?: "Pending"
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(text = "$farmerName - $coffeeType ($qty kg)", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
+                                            Text(text = "Status: $status", fontSize = 12.sp, color = AdminGreen)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        "sales" -> {
+                            if (salesList.isEmpty()) {
+                                Text("No completed sales found.", color = Color.Gray, fontSize = 13.sp)
+                            } else {
+                                salesList.forEach { sale ->
+                                    val farmerName = sale["farmer_name"] as? String ?: "Farmer"
+                                    val buyer = sale["buyer_name"] as? String ?: "Buyer"
+                                    val coffee = sale["coffee_type"] as? String ?: "Coffee"
+                                    val price = sale["offered_price_per_kg"] as? Double ?: 0.0
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(text = "Farmer: $farmerName ➔ Buyer: $buyer", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
+                                            Text(text = "Coffee: $coffee @ KES $price/kg", fontSize = 12.sp, color = AdminGreen)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { selectedDrillDownView = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminGreen),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Close")
+                }
+            }
+        )
     }
 }
