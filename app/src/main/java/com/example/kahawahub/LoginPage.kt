@@ -1,9 +1,11 @@
 package com.example.kahawahub
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -20,6 +23,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,22 +49,27 @@ private val LoginGreen = Color(0xFF245640)
 fun LoginPage(
     onRegistrationClick: () -> Unit,
     onLoginSuccess: (String) -> Unit,
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
-){
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
+    var forgotPasswordEmail by remember { mutableStateOf("") }
 
-    var email by remember {
-        mutableStateOf("")
-    }
-    var password by remember {
-        mutableStateOf("")
-    }
-    var rememberMe by remember {
-        mutableStateOf(false)
-    }
-    var isLoading by remember {
-        mutableStateOf(false)
-    }
     val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("KahawaPrefs", Context.MODE_PRIVATE)
+
+    // Load saved email on start if Remember Me was used
+    LaunchedEffect(Unit) {
+        val savedEmail = sharedPreferences.getString("saved_email", "") ?: ""
+        if (savedEmail.isNotBlank()) {
+            email = savedEmail
+            rememberMe = true
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -69,7 +78,7 @@ fun LoginPage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier=Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f))
         Text(
             text = "KAHAWA HUB",
             fontSize = 32.sp,
@@ -88,12 +97,8 @@ fun LoginPage(
 
         OutlinedTextField(
             value = email,
-            onValueChange = {
-                email = it
-            },
-            label = {
-                Text("Email")
-            },
+            onValueChange = { email = it },
+            label = { Text("Email") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier.fillMaxWidth(),
@@ -111,12 +116,8 @@ fun LoginPage(
 
         OutlinedTextField(
             value = password,
-            onValueChange = {
-                password = it
-            },
-            label = {
-                Text("Password")
-            },
+            onValueChange = { password = it },
+            label = { Text("Password") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             shape = RoundedCornerShape(14.dp),
@@ -139,12 +140,8 @@ fun LoginPage(
         ) {
             Checkbox(
                 checked = rememberMe,
-                onCheckedChange = {
-                    rememberMe = it
-                },
-                colors = CheckboxDefaults.colors(
-                    checkedColor = LoginGreen
-                )
+                onCheckedChange = { rememberMe = it },
+                colors = CheckboxDefaults.colors(checkedColor = LoginGreen)
             )
             Text(
                 text = "Remember me",
@@ -153,11 +150,19 @@ fun LoginPage(
             )
             Spacer(modifier = Modifier.weight(1f))
 
-            Text(
-                text = "Forgot password?",
-                color = LoginGreen,
-                fontSize = 12.sp
-            )
+            TextButton(
+                onClick = {
+                    forgotPasswordEmail = email
+                    showForgotPasswordDialog = true
+                },
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text(
+                    text = "Forgot password?",
+                    color = LoginGreen,
+                    fontSize = 12.sp
+                )
+            }
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -178,6 +183,13 @@ fun LoginPage(
                     FirebaseAuth.getInstance()
                         .signInWithEmailAndPassword(trimmedEmail, trimmedPassword)
                         .addOnSuccessListener {
+                            // Handle Remember Me preference
+                            if (rememberMe) {
+                                sharedPreferences.edit().putString("saved_email", trimmedEmail).apply()
+                            } else {
+                                sharedPreferences.edit().remove("saved_email").apply()
+                            }
+
                             val userId = FirebaseAuth.getInstance().currentUser?.uid
 
                             if (userId != null) {
@@ -277,7 +289,7 @@ fun LoginPage(
         ) {
             Text(
                 text = "Don't have an account?",
-                color=LoginBrown,
+                color = LoginBrown,
                 fontSize = 14.sp
             )
             Spacer(modifier = Modifier.width(5.dp))
@@ -285,16 +297,75 @@ fun LoginPage(
             TextButton(
                 onClick = onRegistrationClick
             ) {
-
                 Text(
                     text = "Sign up",
-                    color=LoginGreen,
+                    color = LoginGreen,
                     fontWeight = FontWeight.Bold
                 )
             }
-
-
         }
     }
-}
 
+    // Forgot Password Dialog
+    if (showForgotPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotPasswordDialog = false },
+            title = { Text("Reset Password", fontWeight = FontWeight.Bold, color = LoginBrown) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Enter your account email address. We will send you a secure link to reset your password.",
+                        fontSize = 13.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = forgotPasswordEmail,
+                        onValueChange = { forgotPasswordEmail = it },
+                        label = { Text("Email Address") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val resetEmail = forgotPasswordEmail.trim()
+                        if (resetEmail.isBlank()) {
+                            Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        FirebaseAuth.getInstance().sendPasswordResetEmail(resetEmail)
+                            .addOnSuccessListener {
+                                Toast.makeText(
+                                    context,
+                                    "Password reset email sent! Check your inbox.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                showForgotPasswordDialog = false
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(
+                                    context,
+                                    "Failed to send reset email: ${e.localizedMessage}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = LoginGreen),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Send Reset Link")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgotPasswordDialog = false }) {
+                    Text("Cancel", color = LoginBrown)
+                }
+            },
+            containerColor = LoginCream
+        )
+    }
+}
