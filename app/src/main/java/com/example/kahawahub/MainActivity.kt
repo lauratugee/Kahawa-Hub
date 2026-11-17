@@ -133,6 +133,8 @@ fun KahawaHubApp() {
 
                     val normalizedType = userType.trim()
                     currentScreen = when {
+                        normalizedType.equals("Admin", ignoreCase = true) ||
+                        normalizedType.equals("Administrator", ignoreCase = true) -> "adminDashboard"
                         normalizedType.equals("Cooperative Society", ignoreCase = true) ||
                         normalizedType.equals("Cooperative", ignoreCase = true) -> "cooperativeDashboard"
                         else -> "farmerDashboard"
@@ -221,6 +223,14 @@ fun KahawaHubApp() {
             AnnouncementsPage(
                 onBackClick = {
                     currentScreen="farmerDashboard"
+                }
+            )
+        }
+        "adminDashboard" -> {
+            AdminDashboard(
+                onLogoutClick = {
+                    FirebaseAuth.getInstance().signOut()
+                    currentScreen="welcome"
                 }
             )
         }
