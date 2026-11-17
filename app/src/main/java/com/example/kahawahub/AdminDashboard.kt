@@ -116,7 +116,7 @@ fun AdminDashboard(
         ) {
             Column {
                 Text(
-                    text = "👑 Administrator Portal",
+                    text = " Administrator Portal",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = AdminBrown
