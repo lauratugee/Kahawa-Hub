@@ -71,6 +71,13 @@ data class FarmerAnnouncement(
     val datePosted: Long= 0L
 )
 
+data class FarmerNotificationItem(
+    val id: String = "",
+    val title: String = "",
+    val message: String = "",
+    val datePosted: Long = 0L
+)
+
 @Composable
 fun FarmerDashboard(
     selectedTab: Int,
@@ -86,8 +93,39 @@ fun FarmerDashboard(
     val announcements = remember {
         mutableStateListOf<FarmerAnnouncement>()
     }
+    val personalNotifications = remember {
+        mutableStateListOf<FarmerNotificationItem>()
+    }
     var announcementsLoading by remember { mutableStateOf(true) }
     var cooperativeId by remember { mutableStateOf<String?>(null) }
+
+    // Listen to personal notifications for this specific farmer
+    DisposableEffect(Unit) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            val db = FirebaseFirestore.getInstance()
+            val listener = db.collection("farmer_notifications")
+                .whereEqualTo("farmer_id", userId)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        personalNotifications.clear()
+                        for (doc in snapshot.documents) {
+                            personalNotifications.add(
+                                FarmerNotificationItem(
+                                    id = doc.id,
+                                    title = doc.getString("title") ?: "",
+                                    message = doc.getString("message") ?: "",
+                                    datePosted = doc.getLong("date_posted") ?: 0L
+                                )
+                            )
+                        }
+                    }
+                }
+            onDispose { listener.remove() }
+        } else {
+            onDispose { }
+        }
+    }
 
     LaunchedEffect(Unit) {
         val currentUser = FirebaseAuth.getInstance().currentUser
@@ -312,6 +350,68 @@ fun FarmerDashboard(
                             alignment = Alignment.Center
                         )
                     }
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // My Personal Notifications Section
+                    Text(
+                        text = "🔔 My Personal Notifications",
+                        fontSize = 20.sp,
+                        fontFamily = PoppinsFamily,
+                        fontWeight = FontWeight.Medium,
+                        color = FarmerBrown
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (personalNotifications.isEmpty()) {
+                        Text(
+                            text = "No personal notifications yet",
+                            fontFamily = PoppinsFamily,
+                            fontSize = 13.sp,
+                            color = Color.Gray
+                        )
+                    } else {
+                        personalNotifications
+                            .sortedByDescending { it.datePosted }
+                            .forEach { notif ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 12.dp),
+                                    shape = RoundedCornerShape(18.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = Color.White
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp)
+                                    ) {
+                                        Text(
+                                            text = notif.title,
+                                            fontFamily = PoppinsFamily,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = FarmerGreen
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = notif.message,
+                                            fontFamily = PoppinsFamily,
+                                            fontSize = 13.sp,
+                                            color = FarmerBrown
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(notif.datePosted)),
+                                            fontFamily = PoppinsFamily,
+                                            fontSize = 11.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                    }
+
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Text(

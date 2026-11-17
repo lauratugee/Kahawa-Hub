@@ -399,15 +399,23 @@ fun MyCoffeeSupplyPage(
 
                                     val report = item.factoryMillingReport
                                     if (report != null) {
+                                        // Extract quantities produced per grade from the factory report
                                         val aa = report["grade_aa_kg"] as? Long ?: 0L
                                         val ab = report["grade_ab_kg"] as? Long ?: 0L
                                         val pb = report["grade_pb_kg"] as? Long ?: 0L
                                         val c = report["grade_c_kg"] as? Long ?: 0L
 
-                                        Text(text = "• Grade AA: $aa kg", fontSize = 12.sp, color = Color.DarkGray)
-                                        Text(text = "• Grade AB: $ab kg", fontSize = 12.sp, color = Color.DarkGray)
-                                        Text(text = "• Grade PB: $pb kg", fontSize = 12.sp, color = Color.DarkGray)
-                                        Text(text = "• Grade C: $c kg", fontSize = 12.sp, color = Color.DarkGray)
+                                        // Filter out grades with 0 kg so only active certified grades are displayed
+                                        val activeGrades = listOf(
+                                            "Grade AA" to aa,
+                                            "Grade AB" to ab,
+                                            "Grade PB" to pb,
+                                            "Grade C" to c
+                                        ).filter { it.second > 0L }
+
+                                        activeGrades.forEach { (gradeName, qty) ->
+                                            Text(text = "• $gradeName: $qty kg", fontSize = 12.sp, color = Color.DarkGray)
+                                        }
                                         Spacer(modifier = Modifier.height(6.dp))
                                     }
 

@@ -1185,6 +1185,7 @@ fun CooperativeDashboard(
                         if (selectedSubmittedForReview != null) {
                             val currentItem = selectedSubmittedForReview!!
                             val submissionId = currentItem["id"] as? String ?: ""
+                            val farmerId = currentItem["farmer_id"] as? String ?: ""
                             val declaredQuantity = currentItem["quantity_kg"] as? Long ?: 0L
 
                             AlertDialog(
@@ -1282,12 +1283,14 @@ fun CooperativeDashboard(
                                                     .document(submissionId)
                                                     .update(updateData)
                                                     .addOnSuccessListener {
-                                                        if (cooperativeId != null) {
-                                                            db.collection("announcements").add(
+                                                        // Send targeted personal notification to this specific farmer only
+                                                        if (cooperativeId != null && farmerId.isNotBlank()) {
+                                                            db.collection("farmer_notifications").add(
                                                                 hashMapOf(
+                                                                    "farmer_id" to farmerId,
                                                                     "cooperative_id" to cooperativeId,
                                                                     "title" to "Supply Volume Accepted - Bring to Cooperative",
-                                                                    "message" to "Your coffee supply volume request has been accepted by the cooperative. Please bring your coffee delivery to the cooperative office for physical check.",
+                                                                    "message" to "Your coffee supply volume request has been accepted. Please bring your coffee delivery to the cooperative office for physical check.",
                                                                     "date_posted" to System.currentTimeMillis()
                                                                 )
                                                             )
@@ -1334,9 +1337,11 @@ fun CooperativeDashboard(
                                                     .document(submissionId)
                                                     .update(updateData)
                                                     .addOnSuccessListener {
-                                                        if (cooperativeId != null) {
-                                                            db.collection("announcements").add(
+                                                        // Send targeted personal notification to this specific farmer only
+                                                        if (cooperativeId != null && farmerId.isNotBlank()) {
+                                                            db.collection("farmer_notifications").add(
                                                                 hashMapOf(
+                                                                    "farmer_id" to farmerId,
                                                                     "cooperative_id" to cooperativeId,
                                                                     "title" to "Coffee Supply Gate Verified!",
                                                                     "message" to "Your coffee delivery has been physically received and verified at the cooperative gate (Grade: $gradeInput).",
@@ -1425,10 +1430,11 @@ fun CooperativeDashboard(
                                                             .document(submissionId)
                                                             .update(updateData)
                                                             .addOnSuccessListener {
-                                                                // Automatically post announcement for rejection & collection notice
-                                                                if (cooperativeId != null) {
-                                                                  db.collection("announcements").add(
+                                                                // Automatically post targeted personal notification for rejection & collection notice
+                                                                if (cooperativeId != null && farmerId.isNotBlank()) {
+                                                                  db.collection("farmer_notifications").add(
                                                                       hashMapOf(
+                                                                          "farmer_id" to farmerId,
                                                                           "cooperative_id" to cooperativeId,
                                                                           "title" to "Coffee Supply Quality Check Failed",
                                                                           "message" to "Your coffee supply submission failed factory/buyer quality inspection. Reason: $rejectionReasonInput. Please collect your coffee from your specific cooperative office.",
@@ -1574,6 +1580,7 @@ fun CooperativeDashboard(
                                                 "milled_at" to System.currentTimeMillis()
                                             )
 
+                                            val farmerId = millItem["farmer_id"] as? String ?: ""
                                             db.collection("coffee_supply_submissions")
                                                 .document(millSubId)
                                                 .update(
@@ -1584,6 +1591,19 @@ fun CooperativeDashboard(
                                                     )
                                                 )
                                                 .addOnSuccessListener {
+                                                    // Send targeted personal notification to this specific farmer only
+                                                    if (cooperativeId != null && farmerId.isNotBlank()) {
+                                                        db.collection("farmer_notifications").add(
+                                                            hashMapOf(
+                                                                "farmer_id" to farmerId,
+                                                                "cooperative_id" to cooperativeId,
+                                                                "title" to "Factory Milling & Final Payout Ready!",
+                                                                "message" to "Your coffee has been milled and settled. Final Payout: KES %.2f. Check your supply history for details.".format(totalPayout),
+                                                                "date_posted" to System.currentTimeMillis()
+                                                            )
+                                                        )
+                                                    }
+
                                                     Toast.makeText(context, "Final Settlement Payout Generated: KES %.2f".format(totalPayout), Toast.LENGTH_LONG).show()
                                                     selectedSubmissionForMilling = null
                                                 }
