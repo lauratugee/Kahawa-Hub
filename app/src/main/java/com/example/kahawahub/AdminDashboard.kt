@@ -43,6 +43,14 @@ fun AdminDashboard(
     // Drill-down dialog state: null, "cooperatives", "farmers", "submissions", "sales"
     var selectedDrillDownView by remember { mutableStateOf<String?>(null) }
 
+    // Secondary Modal State for Upgraded Farmer Details Pop-Up
+    var selectedFarmerDetailsModal by remember { mutableStateOf<Map<String, Any>?>(null) }
+    var farmerCoopName by remember { mutableStateOf("Not assigned") }
+    var farmerCoopLocation by remember { mutableStateOf("N/A") }
+    var farmerSubmissionsList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var farmerTotalEarnings by remember { mutableStateOf(0.0) }
+    var isFarmerDetailsLoading by remember { mutableStateOf(false) }
+
     // Fetch platform statistics and drill-down lists in real time using Firestore listeners
     LaunchedEffect(Unit) {
         // 1. Listen to cooperatives
@@ -58,7 +66,7 @@ fun AdminDashboard(
                 }
             }
 
-        // 2. Listen to farmers from users collection where user_type == Farmer
+        // 2. Listen to active farmers from users collection where user_type == Farmer
         db.collection("users")
             .whereEqualTo("user_type", "Farmer")
             .addSnapshotListener { snapshot, _ ->
@@ -117,7 +125,7 @@ fun AdminDashboard(
         ) {
             Column {
                 Text(
-                    text = " Administrator Portal",
+                    text = "👑 Administrator Portal",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = AdminBrown
@@ -363,16 +371,56 @@ fun AdminDashboard(
                                 Text("No registered farmers found.", color = Color.Gray, fontSize = 13.sp)
                             } else {
                                 farmersList.forEach { farmer ->
+                                    val farmerId = farmer["id"] as? String ?: ""
                                     val name = farmer["name"] as? String ?: farmer["full_name"] as? String ?: "Farmer"
                                     val email = farmer["email"] as? String ?: "No email"
                                     val phone = farmer["phone_number"] as? String ?: "No phone"
+
                                     Card(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                // Trigger Upgraded Farmer Details Pop-Up
+                                                selectedFarmerDetailsModal = farmer
+                                                isFarmerDetailsLoading = true
+                                                farmerCoopName = "Loading..."
+                                                farmerCoopLocation = ""
+                                                farmerSubmissionsList = emptyList()
+                                                farmerTotalEarnings = 0.0
+
+                                                // 1. Fetch cooperative details & supply history for this farmer
+                                                db.collection("farmers").document(farmerId).get()
+                                                    .addOnSuccessListener { farmerDoc ->
+                                                        val coopId = farmerDoc.getString("cooperative_id")
+                                                        if (!coopId.isNullOrBlank()) {
+                                                            db.collection("cooperatives").document(coopId).get()
+                                                                .addOnSuccessListener { coopDoc ->
+                                                                    farmerCoopName = coopDoc.getString("name") ?: coopDoc.getString("cooperative_name") ?: "Cooperative"
+                                                                    farmerCoopLocation = coopDoc.getString("location") ?: "N/A"
+                                                                }
+                                                        } else {
+                                                            farmerCoopName = "No cooperative assigned"
+                                                            farmerCoopLocation = "N/A"
+                                                        }
+                                                    }
+
+                                                db.collection("coffee_supply_submissions")
+                                                    .whereEqualTo("farmer_id", farmerId)
+                                                    .get()
+                                                    .addOnSuccessListener { subSnapshot ->
+                                                        val subs = subSnapshot.documents.map { it.data ?: emptyMap() }
+                                                        farmerSubmissionsList = subs
+                                                        farmerTotalEarnings = subs.sumOf { (it["final_payout_amount"] as? Double) ?: 0.0 }
+                                                        isFarmerDetailsLoading = false
+                                                    }
+                                            },
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
                                             Text(text = name, fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 14.sp)
                                             Text(text = "Email: $email | Phone: $phone", fontSize = 12.sp, color = Color.DarkGray)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(text = "Tap for full profile & history →", fontSize = 11.sp, color = AdminGreen, fontWeight = FontWeight.SemiBold)
                                         }
                                     }
                                 }
@@ -426,6 +474,112 @@ fun AdminDashboard(
             confirmButton = {
                 Button(
                     onClick = { selectedDrillDownView = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminGreen),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
+    // Upgraded Farmer Details Modal (Pop-Up)
+    if (selectedFarmerDetailsModal != null) {
+        val f = selectedFarmerDetailsModal!!
+        val name = f["name"] as? String ?: "Farmer"
+        val email = f["email"] as? String ?: "No email"
+        val phone = f["phone_number"] as? String ?: "No phone"
+
+        AlertDialog(
+            onDismissRequest = { selectedFarmerDetailsModal = null },
+            title = {
+                Text(
+                    text = "Farmer Profile: $name",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AdminBrown
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(380.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 1. Personal Information Section
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF8F5))) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(text = "👤 Personal Information", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "Name: $name", fontSize = 13.sp, color = Color.DarkGray)
+                            Text(text = "Email: $email", fontSize = 13.sp, color = Color.DarkGray)
+                            Text(text = "Phone: $phone", fontSize = 13.sp, color = Color.DarkGray)
+                        }
+                    }
+
+                    // 2. Cooperative Details Section
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFAF8F5))) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(text = "🏢 Cooperative Details", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            if (isFarmerDetailsLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = AdminGreen)
+                            } else {
+                                Text(text = "Cooperative: $farmerCoopName", fontSize = 13.sp, color = Color.DarkGray)
+                                Text(text = "Location: $farmerCoopLocation", fontSize = 13.sp, color = Color.DarkGray)
+                            }
+                        }
+                    }
+
+                    // 3. Financial Summary Section
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(text = "💰 Financial Summary", fontWeight = FontWeight.Bold, color = AdminGreen, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Total Earnings from Settlements: KES %.2f".format(farmerTotalEarnings),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AdminGreen
+                            )
+                        }
+                    }
+
+                    // 4. Coffee Supply History Section
+                    Text(text = "🌾 Coffee Supply History", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 15.sp)
+                    if (isFarmerDetailsLoading) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = AdminGreen)
+                        }
+                    } else if (farmerSubmissionsList.isEmpty()) {
+                        Text(text = "No supply submissions recorded.", fontSize = 12.sp, color = Color.Gray)
+                    } else {
+                        farmerSubmissionsList.forEach { sub ->
+                            val cType = sub["coffee_type"] as? String ?: "Coffee"
+                            val declared = sub["quantity_kg"] as? Long ?: 0L
+                            val verified = sub["verified_quantity_kg"] as? Long ?: 0L
+                            val status = sub["status"] as? String ?: "Pending"
+                            val payout = sub["final_payout_amount"] as? Double ?: 0.0
+
+                            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(text = "$cType", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
+                                    Text(text = "Declared: ${declared} kg | Verified: ${verified} kg", fontSize = 12.sp, color = Color.DarkGray)
+                                    Text(text = "Status: $status", fontSize = 12.sp, color = AdminGreen)
+                                    if (payout > 0.0) {
+                                        Text(text = "Payout: KES %.2f".format(payout), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AdminGreen)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { selectedFarmerDetailsModal = null },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminGreen),
                     shape = RoundedCornerShape(10.dp)
                 ) {
