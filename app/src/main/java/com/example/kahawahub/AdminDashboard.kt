@@ -58,8 +58,9 @@ fun AdminDashboard(
                 }
             }
 
-        // 2. Listen to farmers
-        db.collection("farmers")
+        // 2. Listen to farmers from users collection where user_type == Farmer
+        db.collection("users")
+            .whereEqualTo("user_type", "Farmer")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null) {
                     totalFarmers = snapshot.size()
@@ -362,15 +363,16 @@ fun AdminDashboard(
                                 Text("No registered farmers found.", color = Color.Gray, fontSize = 13.sp)
                             } else {
                                 farmersList.forEach { farmer ->
-                                    val farmerId = farmer["farmer_id"] as? String ?: farmer["user_id"] as? String ?: "ID"
-                                    val coopId = farmer["cooperative_id"] as? String ?: "Unassigned"
+                                    val name = farmer["name"] as? String ?: farmer["full_name"] as? String ?: "Farmer"
+                                    val email = farmer["email"] as? String ?: "No email"
+                                    val phone = farmer["phone_number"] as? String ?: "No phone"
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
                                     ) {
                                         Column(modifier = Modifier.padding(10.dp)) {
-                                            Text(text = "Farmer ID: ${farmerId.takeLast(8)}...", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
-                                            Text(text = "Cooperative ID: ${if (coopId.length > 8) coopId.takeLast(8) else coopId}", fontSize = 12.sp, color = Color.DarkGray)
+                                            Text(text = name, fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 14.sp)
+                                            Text(text = "Email: $email | Phone: $phone", fontSize = 12.sp, color = Color.DarkGray)
                                         }
                                     }
                                 }
