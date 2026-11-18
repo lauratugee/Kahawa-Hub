@@ -923,244 +923,93 @@ fun CooperativeDashboard(
                                 )
                             }
                         } else {
-                            Card(
+                            // Replaced horizontal scroll table with clean vertical mobile cards
+                            LazyColumn(
                                 modifier = Modifier.fillMaxWidth().weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .horizontalScroll(rememberScrollState())
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .background(CoffeeBrown)
-                                            .padding(horizontal = 10.dp, vertical = 10.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            "Farmer Name",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(110.dp)
-                                        )
-                                        VerticalDivider(
-                                            modifier = Modifier.height(20.dp),
-                                            color = Color.White.copy(alpha = 0.3f)
-                                        )
-                                        Text(
-                                            "Contact Number",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(100.dp).padding(start = 6.dp)
-                                        )
-                                        VerticalDivider(
-                                            modifier = Modifier.height(20.dp),
-                                            color = Color.White.copy(alpha = 0.3f)
-                                        )
-                                        Text(
-                                            "Location",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(110.dp).padding(start = 6.dp)
-                                        )
-                                        VerticalDivider(
-                                            modifier = Modifier.height(20.dp),
-                                            color = Color.White.copy(alpha = 0.3f)
-                                        )
-                                        Text(
-                                            "Coffee Type",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(100.dp).padding(start = 6.dp)
-                                        )
-                                        VerticalDivider(
-                                            modifier = Modifier.height(20.dp),
-                                            color = Color.White.copy(alpha = 0.3f)
-                                        )
-                                        Text(
-                                            "Quantity",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(80.dp).padding(start = 6.dp)
-                                        )
-                                        VerticalDivider(
-                                            modifier = Modifier.height(20.dp),
-                                            color = Color.White.copy(alpha = 0.3f)
-                                        )
-                                        Text(
-                                            "Status",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(85.dp).padding(start = 6.dp)
-                                        )
-                                        VerticalDivider(
-                                            modifier = Modifier.height(20.dp),
-                                            color = Color.White.copy(alpha = 0.3f)
-                                        )
-                                        Text(
-                                            "Action",
-                                            color = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.width(75.dp).padding(start = 6.dp)
-                                        )
+                                items(filteredSubmissions) { item ->
+                                    val farmerId = item["farmer_id"] as? String ?: ""
+                                    val memberMatch = members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
+                                    val phone = memberMatch?.get("phone_number") as? String ?: "N/A"
+                                    val county = item["county"] as? String ?: ""
+                                    val subCounty = item["sub_county"] as? String ?: ""
+                                    val locationStr = if (subCounty.isNotBlank() || county.isNotBlank()) {
+                                        "(${subCounty.ifBlank { "N/A" }}, ${county.ifBlank { "N/A" }})"
+                                    } else {
+                                        "N/A"
                                     }
-                                    HorizontalDivider(color = Color.LightGray)
 
-                                    LazyColumn(
-                                        modifier = Modifier.fillMaxSize()
+                                    val qtyKg = item["quantity_kg"] as? Long ?: 0L
+                                    val verifiedQuantity = item["verified_quantity_kg"] as? Long ?: 0L
+                                    val status = item["status"] as? String ?: "Pending"
+
+                                    val (statusBg, statusFg) = when (status.lowercase()) {
+                                        "verified" -> Color(0xFFC8E6C9) to CoffeeGreen
+                                        "under review" -> Color(0xFFBBDEFB) to CoffeeBlue
+                                        "rejected" -> Color(0xFFFFCDD2) to CoffeeRed
+                                        else -> Color(0xFFFFE0B2) to CoffeeOrange
+                                    }
+
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                     ) {
-                                        items(filteredSubmissions) { item ->
-                                            val farmerId = item["farmer_id"] as? String ?: ""
-                                            val memberMatch =
-                                                members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
-                                            val phone =
-                                                memberMatch?.get("phone_number") as? String ?: "N/A"
-                                            val county = item["county"] as? String ?: ""
-                                            val subCounty = item["sub_county"] as? String ?: ""
-                                            val locationStr =
-                                                if (subCounty.isNotBlank() || county.isNotBlank()) {
-                                                    "(${subCounty.ifBlank { "N/A" }}, ${county.ifBlank { "N/A" }})"
-                                                } else {
-                                                    "N/A"
-                                                }
-
-                                            val qtyKg = item["quantity_kg"] as? Long ?: 0L
-                                            val verifiedQuantity =
-                                                item["verified_quantity_kg"] as? Long ?: 0L
-                                            val status = item["status"] as? String ?: "Pending"
-
-                                            val (statusBg, statusFg) = when (status.lowercase()) {
-                                                "verified" -> Color(0xFFC8E6C9) to CoffeeGreen
-                                                "under review" -> Color(0xFFBBDEFB) to CoffeeBlue
-                                                "rejected" -> Color(0xFFFFCDD2) to CoffeeRed
-                                                else -> Color(0xFFFFE0B2) to CoffeeOrange
-                                            }
-
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
                                             Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    item["farmer_name"] as? String ?: "Unknown",
-                                                    modifier = Modifier.width(110.dp),
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    fontSize = 13.sp
-                                                )
-                                                VerticalDivider(
-                                                    modifier = Modifier.height(28.dp),
-                                                    color = Color.LightGray.copy(alpha = 0.5f)
-                                                )
-                                                Text(
-                                                    phone,
-                                                    modifier = Modifier.width(100.dp)
-                                                        .padding(start = 6.dp),
-                                                    fontSize = 12.sp,
-                                                    color = Color.DarkGray
-                                                )
-                                                VerticalDivider(
-                                                    modifier = Modifier.height(28.dp),
-                                                    color = Color.LightGray.copy(alpha = 0.5f)
-                                                )
-                                                Text(
-                                                    locationStr,
-                                                    modifier = Modifier.width(110.dp)
-                                                        .padding(start = 6.dp),
-                                                    fontSize = 12.sp,
-                                                    color = Color.DarkGray
-                                                )
-                                                VerticalDivider(
-                                                    modifier = Modifier.height(28.dp),
-                                                    color = Color.LightGray.copy(alpha = 0.5f)
-                                                )
-                                                Text(
-                                                    item["coffee_type"] as? String ?: "",
-                                                    modifier = Modifier.width(100.dp)
-                                                        .padding(start = 6.dp),
-                                                    fontSize = 12.sp
-                                                )
-                                                VerticalDivider(
-                                                    modifier = Modifier.height(28.dp),
-                                                    color = Color.LightGray.copy(alpha = 0.5f)
-                                                )
-                                                Column(
-                                                    modifier = Modifier.width(80.dp)
-                                                        .padding(start = 6.dp)
-                                                ) {
-                                                    Text(
-                                                        "${qtyKg} kg",
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        fontSize = 12.sp
-                                                    )
-                                                    if (status.equals(
-                                                            "Verified",
-                                                            ignoreCase = true
-                                                        ) && verifiedQuantity > 0
-                                                    ) {
-                                                        Text(
-                                                            "Ver: ${verifiedQuantity} kg",
-                                                            fontSize = 10.sp,
-                                                            color = CoffeeGreen
-                                                        )
-                                                    }
-                                                }
-                                                VerticalDivider(
-                                                    modifier = Modifier.height(28.dp),
-                                                    color = Color.LightGray.copy(alpha = 0.5f)
+                                                    text = item["farmer_name"] as? String ?: "Unknown Farmer",
+                                                    fontSize = 16.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = CoffeeBrown
                                                 )
                                                 Surface(
                                                     shape = RoundedCornerShape(16.dp),
-                                                    color = statusBg,
-                                                    modifier = Modifier.width(85.dp)
-                                                        .padding(start = 6.dp)
+                                                    color = statusBg
                                                 ) {
                                                     Text(
                                                         text = status,
                                                         fontWeight = FontWeight.Bold,
-                                                        fontSize = 10.sp,
+                                                        fontSize = 11.sp,
                                                         color = statusFg,
-                                                        modifier = Modifier.padding(
-                                                            horizontal = 6.dp,
-                                                            vertical = 4.dp
-                                                        )
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                                     )
                                                 }
-                                                VerticalDivider(
-                                                    modifier = Modifier.height(28.dp),
-                                                    color = Color.LightGray.copy(alpha = 0.5f)
-                                                )
+                                            }
+
+                                            Text(text = "📱 Contact: $phone | 📍 Location: $locationStr", fontSize = 13.sp, color = Color.DarkGray)
+                                            Text(text = "☕ Coffee Type: ${item["coffee_type"] ?: ""} | ⚖️ Quantity: ${qtyKg} kg${if (verifiedQuantity > 0) " (Ver: ${verifiedQuantity} kg)" else ""}", fontSize = 13.sp, color = Color.DarkGray)
+
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
                                                 Button(
                                                     onClick = {
                                                         selectedSubmittedForReview = item
-                                                        verifiedQuantityInput =
-                                                            (if (verifiedQuantity > 0) verifiedQuantity else qtyKg).toString()
-                                                        rejectionReasonInput =
-                                                            item["rejection_reason"] as? String
-                                                                ?: ""
+                                                        verifiedQuantityInput = (if (verifiedQuantity > 0) verifiedQuantity else qtyKg).toString()
+                                                        rejectionReasonInput = item["rejection_reason"] as? String ?: ""
                                                     },
-                                                    modifier = Modifier.width(70.dp).height(32.dp)
-                                                        .padding(start = 4.dp),
-                                                    colors = ButtonDefaults.buttonColors(
-                                                        containerColor = CoffeeGreen
-                                                    ),
-                                                    contentPadding = PaddingValues(horizontal = 2.dp)
+                                                    modifier = Modifier.weight(1f).height(36.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                                    shape = RoundedCornerShape(10.dp)
                                                 ) {
-                                                    Text("Review", fontSize = 11.sp)
+                                                    Text("Review", fontSize = 12.sp)
                                                 }
 
                                                 if (status.equals("Verified", ignoreCase = true) || status.equals("Milled & Settled", ignoreCase = true)) {
-                                                    Spacer(modifier = Modifier.width(4.dp))
                                                     OutlinedButton(
                                                         onClick = {
                                                             selectedSubmissionForMilling = item
@@ -1169,14 +1018,13 @@ fun CooperativeDashboard(
                                                             millGradePB = ""
                                                             millGradeC = ""
                                                         },
-                                                        modifier = Modifier.width(55.dp).height(32.dp),
-                                                        contentPadding = PaddingValues(horizontal = 2.dp)
+                                                        modifier = Modifier.weight(1f).height(36.dp),
+                                                        shape = RoundedCornerShape(10.dp)
                                                     ) {
-                                                        Text("Mill", fontSize = 11.sp, color = CoffeeBrown)
+                                                        Text("Mill Report", fontSize = 12.sp, color = CoffeeBrown)
                                                     }
                                                 }
                                             }
-                                            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
                                         }
                                     }
                                 }
