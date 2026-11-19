@@ -307,6 +307,12 @@ fun FindCooperativePage(
                         fontWeight = FontWeight.SemiBold,
                         color = CooperativeGreen
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    CooperativeMapCard(
+                        cooperativeName = coop.name,
+                        locationString = coop.location,
+                        farmerLocation = "Nyeri"
+                    )
                     HorizontalDivider(color = Color.LightGray)
 
                     Text(

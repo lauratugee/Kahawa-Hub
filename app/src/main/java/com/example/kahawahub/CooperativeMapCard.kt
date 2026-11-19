@@ -18,21 +18,33 @@ import androidx.compose.ui.unit.sp
 private val MapBrown = Color(0xFF684832)
 private val MapGreen = Color(0xFF245640)
 private val MapRed = Color(0xFFD32F2F)
+private val MapBlue = Color(0xFF1976D2)
 
 @Composable
 fun CooperativeMapCard(
     cooperativeName: String,
-    locationString: String
+    locationString: String,
+    farmerLocation: String = "Nyeri"
 ) {
-    // Resolve precise regional coordinates for the location string
-    val (lat, lng, regionDisplayName) = remember(locationString) {
+    // Resolve precise regional coordinates for the cooperative
+    val (coopLat, coopLng, coopRegionName) = remember(locationString) {
         getCoordinatesForRegion(locationString)
+    }
+
+    // Resolve precise regional coordinates for the farmer
+    val (farmerLat, farmerLng, farmerRegionName) = remember(farmerLocation) {
+        getCoordinatesForRegion(farmerLocation.ifBlank { "Nyeri" })
+    }
+
+    // Calculate exact Haversine distance in km
+    val distanceKm = remember(farmerLat, farmerLng, coopLat, coopLng) {
+        DistanceUtils.calculateDistanceKm(farmerLat, farmerLng, coopLat, coopLng)
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp),
+            .height(250.dp),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -43,7 +55,7 @@ fun CooperativeMapCard(
                 .background(Color(0xFFEFEBE9)),
             contentAlignment = Alignment.Center
         ) {
-            // Abstract Canvas Vector Map representation with grid & trade routes
+            // Canvas Vector Map representation with dual pins (Farmer & Cooperative)
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val canvasWidth = size.width
                 val canvasHeight = size.height
@@ -65,28 +77,52 @@ fun CooperativeMapCard(
                     )
                 }
 
-                // Draw connecting trade routes / transport paths
+                // Farmer pin position (Bottom Left area)
+                val farmerPoint = Offset(canvasWidth * 0.25f, canvasHeight * 0.75f)
+                // Cooperative pin position (Top Right area)
+                val coopPoint = Offset(canvasWidth * 0.75f, canvasHeight * 0.35f)
+
+                // Draw connecting trade route line between Farmer and Cooperative
                 drawLine(
-                    color = MapGreen.copy(alpha = 0.4f),
-                    start = Offset(canvasWidth * 0.3f, canvasHeight * 0.7f),
-                    end = Offset(canvasWidth * 0.5f, canvasHeight * 0.4f),
+                    color = MapGreen,
+                    start = farmerPoint,
+                    end = coopPoint,
                     strokeWidth = 3.dp.toPx()
                 )
-                drawLine(
-                    color = MapBrown.copy(alpha = 0.4f),
-                    start = Offset(canvasWidth * 0.5f, canvasHeight * 0.4f),
-                    end = Offset(canvasWidth * 0.75f, canvasHeight * 0.65f),
-                    strokeWidth = 3.dp.toPx()
+
+                // Draw Farmer marker dot (Blue)
+                drawCircle(
+                    color = MapBlue,
+                    radius = 8.dp.toPx(),
+                    center = farmerPoint
+                )
+                drawCircle(
+                    color = Color.White,
+                    radius = 4.dp.toPx(),
+                    center = farmerPoint
+                )
+
+                // Draw Cooperative marker dot (Red)
+                drawCircle(
+                    color = MapRed,
+                    radius = 10.dp.toPx(),
+                    center = coopPoint
+                )
+                drawCircle(
+                    color = Color.White,
+                    radius = 5.dp.toPx(),
+                    center = coopPoint
                 )
             }
 
-            // Overlay Information Card & Pin
+            // Overlay Information Cards & Pins
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(14.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
+                // Top Row: Farmer Location vs Cooperative Region
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -94,31 +130,31 @@ fun CooperativeMapCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = MapGreen
+                        color = MapBlue
                     ) {
                         Text(
-                            text = "📍 Region: $regionDisplayName",
+                            text = "🔵 You: $farmerRegionName",
                             color = Color.White,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color.White.copy(alpha = 0.9f)
+                        color = MapGreen
                     ) {
                         Text(
-                            text = "GPS: %.4f, %.4f".format(lat, lng),
-                            color = MapBrown,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
+                            text = "🔴 Coop: $coopRegionName",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
                 }
 
-                // Center Pin Badge
+                // Center Cooperative Badge Card
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -126,40 +162,45 @@ fun CooperativeMapCard(
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(12.dp)
+                                .size(10.dp)
                                 .background(MapRed, CircleShape)
-                        ) {
-                            // Pulse dot effect representation
-                        }
+                        )
                         Column {
                             Text(
                                 text = cooperativeName,
-                                fontSize = 14.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MapBrown
                             )
                             Text(
-                                text = "Verified Coffee Hub & Collection Center",
-                                fontSize = 11.sp,
+                                text = "Target Collection Center",
+                                fontSize = 10.sp,
                                 color = Color.Gray
                             )
                         }
                     }
                 }
 
-                // Bottom Distance Info
-                Text(
-                    text = "Connected to Regional Mill & Transport Network",
-                    fontSize = 11.sp,
-                    color = MapBrown,
+                // Bottom Distance Badge
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MapGreen,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                ) {
+                    Text(
+                        text = "📏 Distance: %.1f km apart".format(distanceKm),
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                    )
+                }
             }
         }
     }
