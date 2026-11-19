@@ -2110,7 +2110,7 @@ fun CooperativeDashboard(
                                     }
                                 }
                             }
-                        } else {
+                        } else if (marketManagementTab == 1) {
                             if (isOffersLoading) {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().weight(1f),
@@ -2202,24 +2202,7 @@ fun CooperativeDashboard(
                                     }
                                 }
                             }
-                        }
-                        if(marketManagementTab!=2){
-                            Button(
-                                onClick={
-                                    if(marketManagementTab==0){
-                                        showAddFactoryDialog=true
-                                    } else {
-                                        showAddOfferDialog=true
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = CoffeeGreen
-                                ),
-                                shape=RoundedCornerShape(12.dp)
-                            ){
-                                Text(if(marketManagementTab==0) "Add Factory" else "Add Offer")
-                            }
-                        } else if(marketManagementTab==2) {
+                        } else if (marketManagementTab == 2) {
                             if (isLinksLoading) {
                                 Box(
                                     modifier = Modifier.fillMaxWidth().weight(1f),
@@ -2305,12 +2288,11 @@ fun CooperativeDashboard(
                                                 Spacer(modifier = Modifier.height(4.dp))
 
                                                 Text(
-                                                    text = "Offered: KES ${link.offeredPricePerKg}/kg |Net Return: KES ${link.netReturnPerKg}/kg",
+                                                    text = "Offered: KES ${link.offeredPricePerKg}/kg | Net Return: KES ${link.netReturnPerKg}/kg",
                                                     fontSize = 14.sp,
                                                     color = Color.DarkGray
                                                 )
                                                 Spacer(modifier = Modifier.height(4.dp))
-
 
                                                 Text(
                                                     text = "Location: ${link.location.ifBlank { "N/A" }}",
@@ -2353,7 +2335,6 @@ fun CooperativeDashboard(
                                                                 .document(link.id)
                                                                 .update("status", "Completed")
                                                                 .addOnSuccessListener {
-                                                                    // Auto-close / remove matching market offer
                                                                     if (cooperativeId != null) {
                                                                         db.collection("market_offers")
                                                                             .whereEqualTo("cooperative_id", cooperativeId)
@@ -2392,6 +2373,26 @@ fun CooperativeDashboard(
                                         }
                                     }
                                 }
+                            }
+                        }
+
+                        // Bottom Add Button only for Factories and Offers tabs
+                        if (marketManagementTab != 2) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = {
+                                    if (marketManagementTab == 0) {
+                                        showAddFactoryDialog = true
+                                    } else {
+                                        showAddOfferDialog = true
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CoffeeGreen
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(if (marketManagementTab == 0) "Add Factory" else "Add Offer")
                             }
                         }
 
