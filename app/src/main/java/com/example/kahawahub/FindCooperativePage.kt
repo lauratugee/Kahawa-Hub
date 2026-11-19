@@ -43,6 +43,7 @@ fun FindCooperativePage(
 ) {
     var cooperatives by remember { mutableStateOf<List<Cooperative>>(emptyList()) }
     var farmerCooperativeId by remember { mutableStateOf<String?>(null) }
+    var farmerCounty by remember { mutableStateOf("Nyeri") }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCooperativeInfo by remember { mutableStateOf<Cooperative?>(null) }
 
@@ -54,10 +55,22 @@ fun FindCooperativePage(
         val db = FirebaseFirestore.getInstance()
 
         if (currentUserId != null) {
+            // Fetch cooperative linkage
             db.collection("farmers").document(currentUserId).get()
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
                         farmerCooperativeId = document.getString("cooperative_id")
+                    }
+                }
+
+            // Fetch farmer's actual county from users profile for dynamic distance calculation
+            db.collection("users").document(currentUserId).get()
+                .addOnSuccessListener { userDoc ->
+                    if (userDoc.exists()) {
+                        val c = userDoc.getString("county") ?: ""
+                        if (c.isNotBlank()) {
+                            farmerCounty = c
+                        }
                     }
                 }
         }
@@ -311,7 +324,7 @@ fun FindCooperativePage(
                     CooperativeMapCard(
                         cooperativeName = coop.name,
                         locationString = coop.location,
-                        farmerLocation = "Nyeri"
+                        farmerLocation = farmerCounty
                     )
                     HorizontalDivider(color = Color.LightGray)
 

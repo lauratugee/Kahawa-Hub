@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +26,7 @@ private val AdminCardBg = Color(0xFFFFFFFF)
 fun AdminDashboard(
     onLogoutClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
 
     // State variables to hold platform-wide statistics
@@ -50,6 +52,11 @@ fun AdminDashboard(
     var farmerSubmissionsList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var farmerTotalEarnings by remember { mutableStateOf(0.0) }
     var isFarmerDetailsLoading by remember { mutableStateOf(false) }
+
+    // System Broadcast Dialog State
+    var showBroadcastDialog by remember { mutableStateOf(false) }
+    var adminBroadcastTitle by remember { mutableStateOf("") }
+    var adminBroadcastMessage by remember { mutableStateOf("") }
 
     // Fetch platform statistics and drill-down lists in real time using Firestore listeners
     LaunchedEffect(Unit) {
@@ -117,15 +124,15 @@ fun AdminDashboard(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Top Header Row with Title and Logout button
+        // Top Header Row with Title, Broadcast Button, and Logout button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "👑 Administrator Portal",
+                    text = "Administrator Portal",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = AdminBrown
@@ -137,12 +144,24 @@ fun AdminDashboard(
                     color = Color.DarkGray
                 )
             }
-            OutlinedButton(
-                onClick = onLogoutClick,
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
-            ) {
-                Text("Logout")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { showBroadcastDialog = true },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminGreen),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text("📢 Broadcast", fontSize = 12.sp)
+                }
+
+                OutlinedButton(
+                    onClick = onLogoutClick,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text("Logout", fontSize = 12.sp)
+                }
             }
         }
 
@@ -319,6 +338,87 @@ fun AdminDashboard(
         }
     }
 
+    // System Broadcast Dialog
+    if (showBroadcastDialog) {
+        AlertDialog(
+            onDismissRequest = { showBroadcastDialog = false },
+            title = {
+                Text(
+                    text = "📢 Broadcast System Notice",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AdminBrown
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Publish a platform-wide notice to all farmers and cooperatives.",
+                        fontSize = 13.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = adminBroadcastTitle,
+                        onValueChange = { adminBroadcastTitle = it },
+                        label = { Text("Notice Title") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    OutlinedTextField(
+                        value = adminBroadcastMessage,
+                        onValueChange = { adminBroadcastMessage = it },
+                        label = { Text("Notice Message") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (adminBroadcastTitle.isBlank() || adminBroadcastMessage.isBlank()) {
+                            android.widget.Toast.makeText(context, "Please enter title and message", android.widget.Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        val notice = hashMapOf(
+                            "title" to adminBroadcastTitle,
+                            "message" to adminBroadcastMessage,
+                            "date_posted" to System.currentTimeMillis(),
+                            "is_system_broadcast" to true
+                        )
+                        db.collection("announcements").add(notice)
+                            .addOnSuccessListener {
+                                android.widget.Toast.makeText(context, "System broadcast published!", android.widget.Toast.LENGTH_SHORT).show()
+                                adminBroadcastTitle = ""
+                                adminBroadcastMessage = ""
+                                showBroadcastDialog = false
+                            }
+                            .addOnFailureListener { e ->
+                                android.widget.Toast.makeText(context, "Failed: ${e.localizedMessage}", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminGreen),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Publish")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBroadcastDialog = false }) {
+                    Text("Cancel", color = AdminBrown)
+                }
+            }
+        )
+    }
+
     // Drill-Down Dialog for Statistics Cards
     if (selectedDrillDownView != null) {
         AlertDialog(
@@ -380,7 +480,6 @@ fun AdminDashboard(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
-                                                // Trigger Upgraded Farmer Details Pop-Up
                                                 selectedFarmerDetailsModal = farmer
                                                 isFarmerDetailsLoading = true
                                                 farmerCoopName = "Loading..."
@@ -388,7 +487,6 @@ fun AdminDashboard(
                                                 farmerSubmissionsList = emptyList()
                                                 farmerTotalEarnings = 0.0
 
-                                                // 1. Fetch cooperative details & supply history for this farmer
                                                 db.collection("farmers").document(farmerId).get()
                                                     .addOnSuccessListener { farmerDoc ->
                                                         val coopId = farmerDoc.getString("cooperative_id")
@@ -565,7 +663,7 @@ fun AdminDashboard(
 
                             Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                                 Column(modifier = Modifier.padding(10.dp)) {
-                                    Text(text = "$cType", fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
+                                    Text(text = cType, fontWeight = FontWeight.Bold, color = AdminBrown, fontSize = 13.sp)
                                     Text(text = "Declared: ${declared} kg | Verified: ${verified} kg", fontSize = 12.sp, color = Color.DarkGray)
                                     Text(text = "Status: $status", fontSize = 12.sp, color = AdminGreen)
                                     if (payout > 0.0) {
