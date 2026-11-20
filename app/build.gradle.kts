@@ -1,3 +1,5 @@
+// Used below to read local.properties. Imported here because inside the android { } block
+// the name `java` refers to Gradle's Java extension, so `java.util.Properties` wouldn't resolve.
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -23,11 +25,16 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Google Maps key lives in local.properties (git-ignored): MAPS_API_KEY=AIza...
+        // --- Google Maps API key ---
+        // The key is kept in local.properties (which is git-ignored) as: MAPS_API_KEY=AIza...
+        // so it is never committed. At build time we read it and hand it to the manifest.
         val localProps = Properties().apply {
             val file = rootProject.file("local.properties")
+            // Only read the file if it exists (e.g. a fresh clone won't have one yet)
             if (file.exists()) file.inputStream().use { load(it) }
         }
+        // Fills the ${MAPS_API_KEY} placeholder in AndroidManifest.xml.
+        // Falls back to an empty string, which builds fine but shows a blank map.
         manifestPlaceholders["MAPS_API_KEY"] = localProps.getProperty("MAPS_API_KEY", "")
     }
 

@@ -42,9 +42,13 @@ fun ProfilePage(
     var userType by remember { mutableStateOf("") }
     var cooperativeName by remember { mutableStateOf("") }
     var cooperativeLocation by remember { mutableStateOf("") }
+    // ID of the cooperative this farmer belongs to; the map card needs it to load that
+    // cooperative's factories. Blank means "not a member", so no map is shown.
     var memberCooperativeId by remember { mutableStateOf("") }
+    // The farmer's farm position on the map (null until looked up)
     var farmerPoint by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
 
+    // Look up the farm position: saved pin first, else sub-county/county from the profile
     LaunchedEffect(currentUser?.uid) {
         val uid = currentUser?.uid ?: return@LaunchedEffect
         farmerPoint = LocationResolver.farmerPoint(db, context, uid)
@@ -96,6 +100,7 @@ fun ProfilePage(
                 val cooperativeId =
                     farmerDocument.getString("cooperative_id")
 
+                // Remember the cooperative's ID so the map can load its factories
                 memberCooperativeId = cooperativeId.orEmpty()
                 if (!cooperativeId.isNullOrBlank()) {
                     db.collection("cooperatives")
@@ -512,12 +517,16 @@ fun ProfilePage(
                                 value = cooperativeLocation
                             )
                         }
+                        // Map of the farmer's own cooperative: farm, cooperative and its factories,
+                        // with distances. Only shown once we know which cooperative they belong to.
                         if (memberCooperativeId.isNotBlank()) {
                             CooperativeMapCard(
                                 cooperativeId = memberCooperativeId,
                                 cooperativeName = cooperativeName,
                                 locationString = cooperativeLocation,
                                 farmerPoint = farmerPoint,
+                                // Saves the farmer's exact farm pin on their `farmers` document
+                                // (set + merge so existing fields like cooperative_id are kept)
                                 onFarmerPinned = { point ->
                                     val uid = currentUser?.uid
                                     if (uid != null) {

@@ -34,6 +34,8 @@ fun CooperativeProfilePage(
     var isLoading by remember { mutableStateOf(true) }
     var cooperativeName by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
+    // Exact pin for this cooperative (latitude/longitude on its document). Stays null until
+    // the cooperative pins its office; the map then geocodes `location` as a fallback.
     var coopPoint by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
 
     var totalVerifiedSupplyKg by remember { mutableStateOf(0L) }
@@ -52,6 +54,7 @@ fun CooperativeProfilePage(
                 .addOnSuccessListener { document ->
                     cooperativeName = document.getString("name") ?: ""
                     location = document.getString("location") ?: ""
+                    // Pick up a previously saved pin, if there is one
                     val lat = document.getDouble("latitude")
                     val lng = document.getDouble("longitude")
                     if (lat != null && lng != null) {
@@ -146,10 +149,14 @@ fun CooperativeProfilePage(
 
             // Cooperative Location Map
             CooperativeMapCard(
-                cooperativeId = cooperativeId.orEmpty(),
+                cooperativeId = cooperativeId.orEmpty(), // the card loads this coop's factories with it
                 cooperativeName = cooperativeName.ifBlank { "Cooperative Society" },
                 locationString = location.ifBlank { "Nyeri" },
                 cooperativePoint = coopPoint,
+                // No farmerPoint here: a cooperative views its own map (itself + its factories)
+                // Called when the cooperative long-presses the map and taps "Save cooperative
+                // location". Stores the exact pin on its own `cooperatives` document, which the
+                // Firestore rules allow it to update.
                 onCooperativePinned = { point ->
                     if (cooperativeId != null) {
                         db.collection("cooperatives")

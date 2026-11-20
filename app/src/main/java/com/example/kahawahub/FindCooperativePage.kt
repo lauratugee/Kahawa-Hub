@@ -44,6 +44,8 @@ fun FindCooperativePage(
 ) {
     var cooperatives by remember { mutableStateOf<List<Cooperative>>(emptyList()) }
     var farmerCooperativeId by remember { mutableStateOf<String?>(null) }
+    // Where the farmer's farm is on the map (null until looked up). Replaced the old
+    // "farmerCounty" text, which defaulted to Nyeri and gave wrong distances.
     var farmerPoint by remember { mutableStateOf<LatLng?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCooperativeInfo by remember { mutableStateOf<Cooperative?>(null) }
@@ -52,7 +54,10 @@ fun FindCooperativePage(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
 
-    // Farm pin if the farmer set one, else their sub-county/county from the profile
+    // Work out the farmer's position: their saved farm pin if they set one, otherwise their
+    // sub-county/county from the profile. This is its own effect (separate from the
+    // cooperatives load below) because the geocoder lookup can take a moment and must not
+    // delay the cooperative list from appearing.
     LaunchedEffect(currentUserId) {
         if (currentUserId != null) {
             farmerPoint = LocationResolver.farmerPoint(
@@ -322,9 +327,13 @@ fun FindCooperativePage(
                     Spacer(modifier = Modifier.height(6.dp))
                     CooperativeMapCard(
                         cooperativeName = coop.name,
-                        cooperativeId = coop.cooperativeId,
-                        locationString = coop.location,
+                        cooperativeId = coop.cooperativeId, // lets the card load this coop's factories
+                        locationString = coop.location,     // geocoded if the coop has no saved pin
                         farmerPoint = farmerPoint,
+                        // Called when the farmer long-presses the map and taps "Save as my farm".
+                        // Saves the exact spot on their `farmers` document (farm_lat / farm_lng);
+                        // set + merge creates the document if it doesn't exist yet, without
+                        // overwriting cooperative_id.
                         onFarmerPinned = { point ->
                             if (currentUserId != null) {
                                 FirebaseFirestore.getInstance()
@@ -340,6 +349,7 @@ fun FindCooperativePage(
                                         SetOptions.merge()
                                     )
                                     .addOnSuccessListener {
+                                        // Update the map straight away so the distance refreshes
                                         farmerPoint = point
                                         Toast.makeText(context, "Farm location saved", Toast.LENGTH_SHORT).show()
                                     }
