@@ -97,6 +97,8 @@ fun CooperativeDashboard(
     var announcementTitle by remember { mutableStateOf("") }
     var announcementMessage by remember { mutableStateOf("") }
     var announcements by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var systemBroadcasts by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var showAdminNotificationsDialog by remember { mutableStateOf(false) }
     var editingAnnouncementId by remember { mutableStateOf<String?>(null) }
     var showAnnouncementMenu by remember { mutableStateOf<String?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -287,22 +289,17 @@ fun CooperativeDashboard(
             }
         }
     }
+    // Listen to cooperative's own announcements (editable/deletable)
     DisposableEffect(cooperativeId) {
-
         if (cooperativeId == null) {
             announcements = emptyList()
             onDispose { }
         } else {
-
             val listener = db.collection("announcements")
                 .whereEqualTo("cooperative_id", cooperativeId)
                 .addSnapshotListener { snapshot, error ->
-
                     if (error != null) {
-                        Log.e(
-                            "Announcements",
-                            "Error fetching announcements: ${error.message}"
-                        )
+                        Log.e("Announcements", "Error fetching announcements: ${error.message}")
                         return@addSnapshotListener
                     }
                     announcements = snapshot?.documents?.map { document ->
@@ -314,12 +311,25 @@ fun CooperativeDashboard(
                         )
                     } ?: emptyList()
                 }
-            onDispose {
-                listener.remove()
-
-
-            }
+            onDispose { listener.remove() }
         }
+    }
+
+    // Listen to system-wide admin broadcasts for the notification bell icon
+    DisposableEffect(Unit) {
+        val listener = db.collection("announcements")
+            .whereEqualTo("is_system_broadcast", true)
+            .addSnapshotListener { snapshot, _ ->
+                systemBroadcasts = snapshot?.documents?.map { document ->
+                    mapOf(
+                        "id" to document.id,
+                        "title" to (document.getString("title") ?: ""),
+                        "message" to (document.getString("message") ?: ""),
+                        "date_posted" to (document.getLong("date_posted") ?: 0L)
+                    )
+                } ?: emptyList()
+            }
+        onDispose { listener.remove() }
     }
     DisposableEffect(cooperativeId) {
         if (cooperativeId == null) {
@@ -633,21 +643,37 @@ fun CooperativeDashboard(
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Button(
-                                onClick = {
-                                    editName = coopName
-                                    editLocation = coopLocation
-                                    editDescription = coopDescription
-                                    editServices = coopServices
-                                    editMembership = coopMembership
-                                    editContact = coopContact
-                                    showEditCoopDialog = true
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Edit Details", maxLines = 1, fontSize = 13.sp)
+                                IconButton(onClick = { showAdminNotificationsDialog = true }) {
+                                    Box {
+                                        Text("🔔", fontSize = 22.sp)
+                                        if (systemBroadcasts.isNotEmpty()) {
+                                            Badge(modifier = Modifier.align(Alignment.TopEnd)) {
+                                                Text("${systemBroadcasts.size}")
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Button(
+                                    onClick = {
+                                        editName = coopName
+                                        editLocation = coopLocation
+                                        editDescription = coopDescription
+                                        editServices = coopServices
+                                        editMembership = coopMembership
+                                        editContact = coopContact
+                                        showEditCoopDialog = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text("Edit Details", maxLines = 1, fontSize = 13.sp)
+                                }
                             }
                         }
 
@@ -2682,6 +2708,68 @@ fun CooperativeDashboard(
                 }
             }
         }
+    }
+
+    // System Administrator Notifications Dialog for Cooperative Bell Icon
+    if (showAdminNotificationsDialog) {
+        AlertDialog(
+            onDismissRequest = { showAdminNotificationsDialog = false },
+            title = {
+                Text(
+                    text = "🔔 System Administrator Notices",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = CoffeeBrown
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(350.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (systemBroadcasts.isEmpty()) {
+                        Text(text = "No system broadcasts available.", fontSize = 13.sp, color = Color.Gray)
+                    } else {
+                        systemBroadcasts
+                            .sortedByDescending { it["date_posted"] as? Long ?: 0L }
+                            .forEach { notice ->
+                                val title = notice["title"] as? String ?: ""
+                                val message = notice["message"] as? String ?: ""
+                                val date = notice["date_posted"] as? Long ?: 0L
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text(text = title, fontWeight = FontWeight.Bold, color = CoffeeBrown, fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = message, fontSize = 13.sp, color = Color.DarkGray)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(date)),
+                                            fontSize = 11.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showAdminNotificationsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = CoffeeGreen),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Close")
+                }
+            }
+        )
     }
 }
 

@@ -172,45 +172,47 @@ fun FarmerDashboard(
     }
 
     DisposableEffect(cooperativeId) {
-        if (cooperativeId.isNullOrBlank()) {
+        val db = FirebaseFirestore.getInstance()
+        var coopDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
+        var broadcastDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
+
+        fun updateAnnouncements() {
             announcements.clear()
-            announcementsLoading = false
-            onDispose { }
-
-        } else {
-            announcementsLoading = true
-
-            val listener = FirebaseFirestore.getInstance()
-                .collection("announcements")
-                .whereEqualTo("cooperative_id", cooperativeId)
-                .addSnapshotListener { snapshot, error ->
-
-                    if (error != null) {
-                        android.util.Log.e(
-                            "FarmerAnnouncements",
-                            "Error fetching announcements",
-                            error
-                        )
-                        announcementsLoading = false
-                        return@addSnapshotListener
-                    }
-                    announcements.clear()
-
-                    snapshot?.documents?.forEach { document ->
-                        announcements.add(
-                            FarmerAnnouncement(
-                                id = document.id,
-                                title = document.getString("title") ?: "",
-                                message = document.getString("message") ?: "",
-                                datePosted = document.getLong("date_posted") ?: 0L
-                            )
-                        )
-                    }
-                    announcementsLoading = false
-                }
-            onDispose {
-                listener.remove()
+            val allDocs = (coopDocs + broadcastDocs).distinctBy { it.id }
+            allDocs.forEach { doc ->
+                announcements.add(
+                    FarmerAnnouncement(
+                        id = doc.id,
+                        title = doc.getString("title") ?: "",
+                        message = doc.getString("message") ?: "",
+                        datePosted = doc.getLong("date_posted") ?: 0L
+                    )
+                )
             }
+            announcementsLoading = false
+        }
+
+        val coopListener = if (!cooperativeId.isNullOrBlank()) {
+            db.collection("announcements")
+                .whereEqualTo("cooperative_id", cooperativeId)
+                .addSnapshotListener { snapshot, _ ->
+                    coopDocs = snapshot?.documents ?: emptyList()
+                    updateAnnouncements()
+                }
+        } else {
+            null
+        }
+
+        val broadcastListener = db.collection("announcements")
+            .whereEqualTo("is_system_broadcast", true)
+            .addSnapshotListener { snapshot, _ ->
+                broadcastDocs = snapshot?.documents ?: emptyList()
+                updateAnnouncements()
+            }
+
+        onDispose {
+            coopListener?.remove()
+            broadcastListener?.remove()
         }
     }
 
