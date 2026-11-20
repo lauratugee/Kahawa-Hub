@@ -1,0 +1,230 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // HELPER FUNCTIONS
+    // =========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserData().user_type == 'Admin';
+    }
+
+    function isCooperative() {
+      return isAuthenticated() && (getUserData().user_type == 'Cooperative' || getUserData().user_type == 'Cooperative Society');
+    }
+
+    function isFarmer() {
+      return isAuthenticated() && getUserData().user_type == 'Farmer';
+    }
+
+    // Verify that a farmer is associated with the calling cooperative
+    function farmerBelongsToCoop(farmerId, coopId) {
+      let farmerDoc = get(/databases/$(database)/documents/farmers/$(farmerId));
+      return farmerDoc.data != null && farmerDoc.data.cooperative_id == coopId;
+    }
+
+    // Get calling farmer's assigned cooperative_id
+    function getFarmerCoopId(farmerId) {
+      let farmerDoc = get(/databases/$(database)/documents/farmers/$(farmerId));
+      return farmerDoc.data != null ? farmerDoc.data.cooperative_id : null;
+    }
+
+    // =========================================================================
+    // 1. USERS COLLECTION
+    // =========================================================================
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isCooperative());
+
+      allow create: if isAuthenticated() && request.auth.uid == userId
+        && request.resource.data.user_type != 'Admin'
+        && (request.resource.data.user_type == 'Farmer' || request.resource.data.user_type == 'Cooperative' || request.resource.data.user_type == 'Cooperative Society');
+
+      // Explicit field allowlists for updates: users can update profile fields, cannot change user_type to Admin
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId &&
+         request.resource.data.user_type == resource.data.user_type &&
+         request.resource.data.user_type != 'Admin') ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 2. FARMERS COLLECTION
+    // =========================================================================
+    match /farmers/{farmerId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == farmerId ||
+        (isCooperative() && resource.data.cooperative_id == request.auth.uid) ||
+        isAdmin()
+      );
+
+      allow create: if isAuthenticated() && request.auth.uid == farmerId && isFarmer();
+
+      // Corrected cooperative farmer-record updates: a cooperative cannot claim an unrelated farmer by changing cooperative_id
+      allow update: if isAuthenticated() && (
+        request.auth.uid == farmerId ||
+        (isCooperative() && resource.data.cooperative_id == request.auth.uid && request.resource.data.cooperative_id == request.auth.uid) ||
+        isAdmin()
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 3. COOPERATIVES COLLECTION
+    // =========================================================================
+    match /cooperatives/{coopId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == coopId && isCooperative();
+      allow update: if isAuthenticated() && ((request.auth.uid == coopId && isCooperative()) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // =========================================================================
+    // 4. ANNOUNCEMENTS COLLECTION
+    // =========================================================================
+    match /announcements/{announcementId} {
+      allow read: if isAuthenticated();
+      // Allow both Administrators and Cooperatives to publish announcements
+      allow create: if isAdmin() || (isCooperative() && request.resource.data.cooperative_id == request.auth.uid);
+      // Separate update and delete permissions
+      allow update: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id
+      );
+      allow delete: if isAdmin() || (isCooperative() && resource.data.cooperative_id == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 5. FARMER NOTIFICATIONS COLLECTION
+    // =========================================================================
+    match /farmer_notifications/{notifId} {
+      allow read: if isAuthenticated() && (resource.data.farmer_id == request.auth.uid || isAdmin());
+      allow create: if isAdmin() || (
+        isCooperative()
+        && request.resource.data.cooperative_id == request.auth.uid
+        && farmerBelongsToCoop(request.resource.data.farmer_id, request.auth.uid)
+      );
+      allow update, delete: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id
+      );
+    }
+
+    // =========================================================================
+    // 6. COFFEE PRICES COLLECTION
+    // =========================================================================
+    match /coffee_prices/{priceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || (isCooperative() && request.resource.data.cooperative_id == request.auth.uid);
+      allow update: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id
+      );
+      allow delete: if isAdmin() || (isCooperative() && resource.data.cooperative_id == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 7. COFFEE SUPPLY SUBMISSIONS COLLECTION
+    // =========================================================================
+    match /coffee_supply_submissions/{subId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmer_id == request.auth.uid ||
+        (isCooperative() && resource.data.cooperative_id == request.auth.uid) ||
+        isAdmin()
+      );
+      allow create: if isFarmer() && request.resource.data.farmer_id == request.auth.uid
+        && request.resource.data.cooperative_id == getFarmerCoopId(request.auth.uid);
+      allow update: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id &&
+        request.resource.data.farmer_id == resource.data.farmer_id
+      ) || (
+        isFarmer() &&
+        resource.data.farmer_id == request.auth.uid &&
+        resource.data.status == 'Pending' &&
+        request.resource.data.status == 'Pending' &&
+        request.resource.data.farmer_id == resource.data.farmer_id &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id &&
+        request.resource.data.verified_quantity_kg == resource.data.verified_quantity_kg &&
+        request.resource.data.grade == resource.data.grade &&
+        request.resource.data.quality_status == resource.data.quality_status &&
+        request.resource.data.final_payout_amount == resource.data.final_payout_amount
+      );
+      allow delete: if isAdmin() || (isCooperative() && resource.data.cooperative_id == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 8. FACTORIES AND BUYERS COLLECTION
+    // =========================================================================
+    match /factories_and_buyers/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || (isCooperative() && request.resource.data.cooperative_id == request.auth.uid);
+      allow update: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id
+      );
+      allow delete: if isAdmin() || (isCooperative() && resource.data.cooperative_id == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 9. MARKET OFFERS COLLECTION
+    // =========================================================================
+    match /market_offers/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || (isCooperative() && request.resource.data.cooperative_id == request.auth.uid);
+      allow update: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id
+      );
+      allow delete: if isAdmin() || (isCooperative() && resource.data.cooperative_id == request.auth.uid);
+    }
+
+    // =========================================================================
+    // 10. MARKET LINKS COLLECTION
+    // =========================================================================
+    match /market_links/{docId} {
+      allow read: if isAuthenticated() && (
+        resource.data.farmer_id == request.auth.uid ||
+        (isCooperative() && resource.data.cooperative_id == request.auth.uid) ||
+        isAdmin()
+      );
+      allow create: if isFarmer() && request.resource.data.farmer_id == request.auth.uid
+        && request.resource.data.cooperative_id == getFarmerCoopId(request.auth.uid);
+      allow update: if isAdmin() || (
+        isCooperative() &&
+        resource.data.cooperative_id == request.auth.uid &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id &&
+        request.resource.data.farmer_id == resource.data.farmer_id
+      ) || (
+        isFarmer() &&
+        resource.data.farmer_id == request.auth.uid &&
+        request.resource.data.farmer_id == resource.data.farmer_id &&
+        request.resource.data.cooperative_id == resource.data.cooperative_id &&
+        request.resource.data.buyer_name == resource.data.buyer_name &&
+        request.resource.data.offered_price_per_kg == resource.data.offered_price_per_kg &&
+        request.resource.data.net_return_per_kg == resource.data.net_return_per_kg &&
+        request.resource.data.location == resource.data.location &&
+        request.resource.data.status == resource.data.status
+      );
+      allow delete: if isAdmin() || (isCooperative() && resource.data.cooperative_id == request.auth.uid);
+    }
+  }
+}

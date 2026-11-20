@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.google.firebase.firestore.SetOptions
+import com.google.android.gms.maps.model.LatLng
 
 private val CooperativeBrown = Color(0xFF684832)
 private val CooperativeGreen = Color(0xFF245640)
@@ -43,13 +44,22 @@ fun FindCooperativePage(
 ) {
     var cooperatives by remember { mutableStateOf<List<Cooperative>>(emptyList()) }
     var farmerCooperativeId by remember { mutableStateOf<String?>(null) }
-    var farmerCounty by remember { mutableStateOf("Nyeri") }
+    var farmerPoint by remember { mutableStateOf<LatLng?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCooperativeInfo by remember { mutableStateOf<Cooperative?>(null) }
 
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
+
+    // Farm pin if the farmer set one, else their sub-county/county from the profile
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) {
+            farmerPoint = LocationResolver.farmerPoint(
+                FirebaseFirestore.getInstance(), context, currentUserId
+            )
+        }
+    }
 
     LaunchedEffect(currentUserId) {
         val db = FirebaseFirestore.getInstance()
@@ -60,17 +70,6 @@ fun FindCooperativePage(
                 .addOnSuccessListener { document ->
                     if (document.exists()) {
                         farmerCooperativeId = document.getString("cooperative_id")
-                    }
-                }
-
-            // Fetch farmer's actual county from users profile for dynamic distance calculation
-            db.collection("users").document(currentUserId).get()
-                .addOnSuccessListener { userDoc ->
-                    if (userDoc.exists()) {
-                        val c = userDoc.getString("county") ?: ""
-                        if (c.isNotBlank()) {
-                            farmerCounty = c
-                        }
                     }
                 }
         }
@@ -323,8 +322,32 @@ fun FindCooperativePage(
                     Spacer(modifier = Modifier.height(6.dp))
                     CooperativeMapCard(
                         cooperativeName = coop.name,
+                        cooperativeId = coop.cooperativeId,
                         locationString = coop.location,
-                        farmerLocation = farmerCounty
+                        farmerPoint = farmerPoint,
+                        onFarmerPinned = { point ->
+                            if (currentUserId != null) {
+                                FirebaseFirestore.getInstance()
+                                    .collection("farmers")
+                                    .document(currentUserId)
+                                    .set(
+                                        mapOf(
+                                            "farmer_id" to currentUserId,
+                                            "user_id" to currentUserId,
+                                            "farm_lat" to point.latitude,
+                                            "farm_lng" to point.longitude
+                                        ),
+                                        SetOptions.merge()
+                                    )
+                                    .addOnSuccessListener {
+                                        farmerPoint = point
+                                        Toast.makeText(context, "Farm location saved", Toast.LENGTH_SHORT).show()
+                                    }
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Could not save location: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                    }
+                            }
+                        }
                     )
                     HorizontalDivider(color = Color.LightGray)
 

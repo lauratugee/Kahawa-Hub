@@ -34,6 +34,7 @@ fun CooperativeProfilePage(
     var isLoading by remember { mutableStateOf(true) }
     var cooperativeName by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
+    var coopPoint by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
 
     var totalVerifiedSupplyKg by remember { mutableStateOf(0L) }
     var totalSoldSupplyKg by remember { mutableStateOf(0L) }
@@ -51,6 +52,11 @@ fun CooperativeProfilePage(
                 .addOnSuccessListener { document ->
                     cooperativeName = document.getString("name") ?: ""
                     location = document.getString("location") ?: ""
+                    val lat = document.getDouble("latitude")
+                    val lng = document.getDouble("longitude")
+                    if (lat != null && lng != null) {
+                        coopPoint = com.google.android.gms.maps.model.LatLng(lat, lng)
+                    }
                     isLoading = false
                 }
                 .addOnFailureListener {
@@ -140,8 +146,24 @@ fun CooperativeProfilePage(
 
             // Cooperative Location Map
             CooperativeMapCard(
+                cooperativeId = cooperativeId.orEmpty(),
                 cooperativeName = cooperativeName.ifBlank { "Cooperative Society" },
-                locationString = location.ifBlank { "Nyeri" }
+                locationString = location.ifBlank { "Nyeri" },
+                cooperativePoint = coopPoint,
+                onCooperativePinned = { point ->
+                    if (cooperativeId != null) {
+                        db.collection("cooperatives")
+                            .document(cooperativeId)
+                            .update(mapOf("latitude" to point.latitude, "longitude" to point.longitude))
+                            .addOnSuccessListener {
+                                coopPoint = point
+                                Toast.makeText(context, "Cooperative location saved", Toast.LENGTH_SHORT).show()
+                            }
+                            .addOnFailureListener { e ->
+                                Toast.makeText(context, "Could not save location: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            }
+                    }
+                }
             )
 
             // Supply & Demand Overview Card

@@ -28,6 +28,7 @@ import androidx.compose.foundation.background
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.rpc.Status
@@ -91,6 +92,7 @@ fun CooperativeDashboard(
 ) {
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
+    val scope = rememberCoroutineScope()
     val cooperativeId = FirebaseAuth.getInstance().currentUser?.uid
 
     var userName by remember { mutableStateOf("Cooperative Society") }
@@ -1360,6 +1362,47 @@ fun CooperativeDashboard(
                         if (selectedSubmissionForMilling != null) {
                             val millItem = selectedSubmissionForMilling!!
                             val millSubId = millItem["id"] as? String ?: ""
+
+                            // --- Transport deduction: distances come from the same map points shown to farmers ---
+                            val millFarmerId = millItem["farmer_id"] as? String ?: ""
+                            val deliveredKg: Long = (millItem["verified_quantity_kg"] as? Long)?.takeIf { it > 0 }
+                                ?: (millItem["quantity_kg"] as? Long) ?: 0L
+                            var selectedFactoryId by remember(millSubId) { mutableStateOf("") }
+                            var rateInput by remember(millSubId) {
+                                mutableStateOf(DistanceUtils.DEFAULT_RATE_KES_PER_KG_KM.toString())
+                            }
+                            var coopPt by remember(millSubId) { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
+                            var farmerToCoopKm by remember(millSubId) { mutableStateOf<Double?>(null) }
+                            var coopToFactoryKm by remember(millSubId) { mutableStateOf<Double?>(null) }
+
+                            LaunchedEffect(millSubId) {
+                                val cp = if (cooperativeId != null) LocationResolver.cooperativePoint(db, context, cooperativeId) else null
+                                coopPt = cp
+                                val fp = LocationResolver.farmerPoint(db, context, millFarmerId)
+                                farmerToCoopKm = if (cp != null && fp != null) DistanceUtils.calculateDistanceKm(fp, cp) else null
+                            }
+                            LaunchedEffect(selectedFactoryId, coopPt) {
+                                coopToFactoryKm = null
+                                val cp = coopPt
+                                if (selectedFactoryId.isBlank() || cp == null) return@LaunchedEffect
+                                try {
+                                    val d = db.collection("factories_and_buyers").document(selectedFactoryId).get().awaitResult()
+                                    val lat = d.getDouble("latitude")
+                                    val lng = d.getDouble("longitude")
+                                    val fPoint = if (lat != null && lng != null) com.google.android.gms.maps.model.LatLng(lat, lng)
+                                    else LocationResolver.geocode(context, d.getString("location").orEmpty())
+                                    coopToFactoryKm = fPoint?.let { DistanceUtils.calculateDistanceKm(cp, it) }
+                                } catch (e: kotlinx.coroutines.CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    coopToFactoryKm = null
+                                }
+                            }
+                            val haulageRate = rateInput.toDoubleOrNull() ?: DistanceUtils.DEFAULT_RATE_KES_PER_KG_KM
+                            val transportPerKg = DistanceUtils.transportCostPerKg(
+                                (farmerToCoopKm ?: 0.0) + (coopToFactoryKm ?: 0.0), haulageRate
+                            )
+                            val transportTotal = transportPerKg * deliveredKg
                             val farmerName = millItem["farmer_name"] as? String ?: "Farmer"
 
                             AlertDialog(
@@ -1428,6 +1471,42 @@ fun CooperativeDashboard(
                                             OutlinedTextField(value = pricePerPB, onValueChange = { pricePerPB = it }, label = { Text("PB Price") }, modifier = Modifier.weight(1f), singleLine = true)
                                             OutlinedTextField(value = pricePerC, onValueChange = { pricePerC = it }, label = { Text("C Price") }, modifier = Modifier.weight(1f), singleLine = true)
                                         }
+
+                                        HorizontalDivider(color = Color.LightGray)
+                                        Text("Transport deduction:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = CoffeeBrown)
+                                        Text("Delivery factory / buyer:", fontSize = 12.sp, color = Color.DarkGray)
+                                        (listOf("" to "No factory leg") + factoriesAndBuyers.map { it.id to it.entityName }).forEach { (id, label) ->
+                                            val selected = selectedFactoryId == id
+                                            OutlinedButton(
+                                                onClick = { selectedFactoryId = id },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                shape = RoundedCornerShape(10.dp),
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    containerColor = if (selected) CoffeeGreen.copy(alpha = 0.12f) else Color.Transparent
+                                                )
+                                            ) {
+                                                Text((if (selected) "✔ " else "") + label, fontSize = 12.sp, color = CoffeeBrown)
+                                            }
+                                        }
+                                        OutlinedTextField(
+                                            value = rateInput,
+                                            onValueChange = { rateInput = it },
+                                            label = { Text("Haulage rate (KES per kg per km)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        Text(
+                                            text = "Farm → cooperative: " + (farmerToCoopKm?.let { "%.1f km".format(it) } ?: "farm location unknown (not charged)") +
+                                                "\nCooperative → factory: " + (when {
+                                                    selectedFactoryId.isBlank() -> "not applicable"
+                                                    coopToFactoryKm != null -> "%.1f km".format(coopToFactoryKm)
+                                                    else -> "factory location unknown (not charged)"
+                                                }) +
+                                                "\nTransport: KES %.2f/kg × %d kg = KES %.2f".format(transportPerKg, deliveredKg, transportTotal),
+                                            fontSize = 12.sp,
+                                            color = CoffeeGreen
+                                        )
                                     }
                                 },
                                 confirmButton = {
@@ -1443,13 +1522,25 @@ fun CooperativeDashboard(
                                             val pPB = pricePerPB.toDoubleOrNull() ?: 95.0
                                             val pC = pricePerC.toDoubleOrNull() ?: 80.0
 
-                                            val totalPayout = (aaKg * pAA) + (abKg * pAB) + (pbKg * pPB) + (cKg * pC)
+                                            val grossPayout = (aaKg * pAA) + (abKg * pAB) + (pbKg * pPB) + (cKg * pC)
+                                            // Net payout = milled value minus the farm → cooperative → factory haulage
+                                            val totalPayout = maxOf(0.0, grossPayout - transportTotal)
+                                            val factoryName = factoriesAndBuyers.firstOrNull { it.id == selectedFactoryId }?.entityName ?: ""
 
                                             val millingReport = mapOf(
                                                 "grade_aa_kg" to aaKg,
                                                 "grade_ab_kg" to abKg,
                                                 "grade_pb_kg" to pbKg,
                                                 "grade_c_kg" to cKg,
+                                                "gross_payout_kes" to grossPayout,
+                                                "transport_cost_kes" to transportTotal,
+                                                "transport_cost_per_kg" to transportPerKg,
+                                                "transport_rate_per_kg_km" to haulageRate,
+                                                "delivered_kg" to deliveredKg,
+                                                "farmer_to_coop_km" to (farmerToCoopKm ?: 0.0),
+                                                "coop_to_factory_km" to (coopToFactoryKm ?: 0.0),
+                                                "factory_id" to selectedFactoryId,
+                                                "factory_name" to factoryName,
                                                 "total_payout_kes" to totalPayout,
                                                 "milled_at" to System.currentTimeMillis()
                                             )
@@ -1472,7 +1563,7 @@ fun CooperativeDashboard(
                                                                 "farmer_id" to farmerId,
                                                                 "cooperative_id" to cooperativeId,
                                                                 "title" to "Factory Milling & Final Payout Ready!",
-                                                                "message" to "Your coffee has been milled and settled. Final Payout: KES %.2f. Check your supply history for details.".format(totalPayout),
+                                                                "message" to "Your coffee has been milled and settled. Final Payout: KES %.2f (milled value KES %.2f less KES %.2f transport). Check your supply history for details.".format(totalPayout, grossPayout, transportTotal),
                                                                 "date_posted" to System.currentTimeMillis()
                                                             )
                                                         )
@@ -2526,9 +2617,28 @@ fun CooperativeDashboard(
                                                 "date_added" to System.currentTimeMillis(),
                                                 "added_by" to userName
                                             )
+                                            val factoryLocationText = inputLocation
                                             db.collection("factories_and_buyers")
                                                 .add(payload)
-                                                .addOnSuccessListener {
+                                                .addOnSuccessListener { newFactoryDoc ->
+                                                    // Place the factory on the map so transport distances can be worked out
+                                                    scope.launch {
+                                                        val point = LocationResolver.geocode(context, factoryLocationText)
+                                                        if (point != null) {
+                                                            newFactoryDoc.update(
+                                                                mapOf(
+                                                                    "latitude" to point.latitude,
+                                                                    "longitude" to point.longitude
+                                                                )
+                                                            )
+                                                        } else {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Couldn't place \"$factoryLocationText\" on the map. Try a nearby town or county.",
+                                                                Toast.LENGTH_LONG
+                                                            ).show()
+                                                        }
+                                                    }
                                                     Toast.makeText(
                                                         context,
                                                         "Factory/Buyer added successfully",

@@ -42,6 +42,13 @@ fun ProfilePage(
     var userType by remember { mutableStateOf("") }
     var cooperativeName by remember { mutableStateOf("") }
     var cooperativeLocation by remember { mutableStateOf("") }
+    var memberCooperativeId by remember { mutableStateOf("") }
+    var farmerPoint by remember { mutableStateOf<com.google.android.gms.maps.model.LatLng?>(null) }
+
+    LaunchedEffect(currentUser?.uid) {
+        val uid = currentUser?.uid ?: return@LaunchedEffect
+        farmerPoint = LocationResolver.farmerPoint(db, context, uid)
+    }
 
     // Supply & Sales Dashboard States
     var totalDeclaredSupplyKg by remember { mutableStateOf(0L) }
@@ -89,6 +96,7 @@ fun ProfilePage(
                 val cooperativeId =
                     farmerDocument.getString("cooperative_id")
 
+                memberCooperativeId = cooperativeId.orEmpty()
                 if (!cooperativeId.isNullOrBlank()) {
                     db.collection("cooperatives")
                         .document(cooperativeId)
@@ -502,6 +510,36 @@ fun ProfilePage(
                                 emoji = "📍",
                                 label = "Location",
                                 value = cooperativeLocation
+                            )
+                        }
+                        if (memberCooperativeId.isNotBlank()) {
+                            CooperativeMapCard(
+                                cooperativeId = memberCooperativeId,
+                                cooperativeName = cooperativeName,
+                                locationString = cooperativeLocation,
+                                farmerPoint = farmerPoint,
+                                onFarmerPinned = { point ->
+                                    val uid = currentUser?.uid
+                                    if (uid != null) {
+                                        db.collection("farmers").document(uid)
+                                            .set(
+                                                mapOf(
+                                                    "farmer_id" to uid,
+                                                    "user_id" to uid,
+                                                    "farm_lat" to point.latitude,
+                                                    "farm_lng" to point.longitude
+                                                ),
+                                                SetOptions.merge()
+                                            )
+                                            .addOnSuccessListener {
+                                                farmerPoint = point
+                                                Toast.makeText(context, "Farm location saved", Toast.LENGTH_SHORT).show()
+                                            }
+                                            .addOnFailureListener { e ->
+                                                Toast.makeText(context, "Could not save location: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                            }
+                                    }
+                                }
                             )
                         }
                         OutlinedButton(
