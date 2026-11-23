@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,7 +40,7 @@ data class MarketPrice(
 @Composable
 fun CoffeeMarketPricesPage(
     cooperativeId: String? = null,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit = {}
 ){
 
 
@@ -242,16 +240,7 @@ fun CoffeeMarketPricesPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Coffee Market Prices", color = MarketBrown) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MarketBrown
-                        )
-                    }
-                }
+                title = { Text("Coffee Market Prices", color = MarketBrown) }
             )
         },
         containerColor = MarketCream

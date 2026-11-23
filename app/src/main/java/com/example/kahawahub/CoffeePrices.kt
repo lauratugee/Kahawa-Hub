@@ -11,7 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun CoffeePrices(onBackClick: () -> Unit) {
+fun CoffeePrices(onBackClick: () -> Unit = {}) {
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
 
@@ -24,10 +24,6 @@ fun CoffeePrices(onBackClick: () -> Unit) {
             .fillMaxSize()
             .padding(20.dp)
     ){
-        Button(onClick = onBackClick ) {
-            Text("Back")
-        }
-        Spacer(modifier=Modifier.height(12.dp))
         Text(
             text = "Update Coffee Price",
             style = MaterialTheme.typography.headlineMedium

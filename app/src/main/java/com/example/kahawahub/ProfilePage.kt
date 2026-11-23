@@ -29,7 +29,7 @@ private val ProfileRed = Color(0xFFF44336)
 
 @Composable
 fun ProfilePage(
-    onBackClick: () -> Unit,
+    onBackClick: () -> Unit = {},
     onLogoutClick: () -> Unit
 ) {
     val context = LocalContext.current

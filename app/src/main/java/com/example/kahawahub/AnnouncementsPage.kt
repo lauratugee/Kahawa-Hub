@@ -25,7 +25,7 @@ private data class AnnouncementItem(
 
 @Composable
 fun AnnouncementsPage (
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit = {}
 ) {
     val db= FirebaseFirestore.getInstance()
     val userId = FirebaseAuth.getInstance().currentUser?.uid
@@ -104,19 +104,11 @@ fun AnnouncementsPage (
             .padding(20.dp)
 
     ){
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ){
-            TextButton(onClick=onBackClick){
-                Text("Back")
-            }
-            Text(
-                text="Announcements",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        Text(
+            text = "Announcements",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
