@@ -20,6 +20,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.FieldValue
+import kotlinx.coroutines.launch
 
 private val ProfileCream = Color(0xFFF7F3E9)
 private val ProfileBrown = Color(0xFF684832)
@@ -35,9 +36,12 @@ fun ProfilePage(
     val context = LocalContext.current
     val currentUser = FirebaseAuth.getInstance().currentUser
     val db = FirebaseFirestore.getInstance()
+    val scope = rememberCoroutineScope()
 
     var fullName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
+    var county by remember { mutableStateOf("") }
+    var subCounty by remember { mutableStateOf("") }
     var email by remember { mutableStateOf(currentUser?.email ?: "") }
     var userType by remember { mutableStateOf("") }
     var cooperativeName by remember { mutableStateOf("") }
@@ -81,6 +85,8 @@ fun ProfilePage(
                 phoneNumber = document.getString("phone_number") ?: ""
                 email = document.getString("email") ?: currentUser.email.orEmpty()
                 userType = document.getString("user_type") ?: ""
+                county = document.getString("county") ?: ""
+                subCounty = document.getString("sub_county") ?: ""
                 notificationsEnabled= document.getBoolean("notifications_enabled") ?: true
                 isLoading = false
             }
@@ -387,13 +393,31 @@ fun ProfilePage(
                         shape = RoundedCornerShape(12.dp)
                     )
 
+                    OutlinedTextField(
+                        value = county,
+                        onValueChange = { county = it },
+                        label = { Text("County (e.g. Nyeri, Kiambu, Meru)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = subCounty,
+                        onValueChange = { subCounty = it },
+                        label = { Text("Sub-County / Location") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
                 } else {
                     ProfileInfoRow(
                         emoji = "👤",
                         label = "Full name",
                         value = fullName.ifBlank { "Not provided" }
                     )
-                    HorizontalDivider(color = Color.White)
+                    HorizontalDivider(color = Color(0xFFEAA3D9))
 
                     ProfileInfoRow(
                         emoji = "💌",
@@ -407,6 +431,14 @@ fun ProfilePage(
                         label = "Phone number",
                         value = phoneNumber.ifBlank { "Not provided" }
                     )
+                    if (county.isNotBlank() || subCounty.isNotBlank()) {
+                        HorizontalDivider(color = Color(0xFFEAA3D9))
+                        ProfileInfoRow(
+                            emoji = "📍",
+                            label = "County & Sub-County",
+                            value = listOf(subCounty, county).filter { it.isNotBlank() }.joinToString(", ").ifBlank { "Not provided" }
+                        )
+                    }
                 }
                 if (isEditing) {
                     Button(
@@ -429,20 +461,26 @@ fun ProfilePage(
                                 ).show()
                             } else {
                                 isSaving = true
+                                val updateData = mapOf(
+                                    "name" to fullName.trim(),
+                                    "phone_number" to phoneNumber.trim(),
+                                    "county" to county.trim(),
+                                    "sub_county" to subCounty.trim()
+                                )
                                 db.collection("users")
                                     .document(userId)
-                                    .set(
-                                        mapOf(
-                                            "name" to fullName.trim(),
-                                            "phone_number" to phoneNumber.trim()
-                                        ),
-                                        SetOptions.merge()
-                                    )
+                                    .set(updateData, SetOptions.merge())
                                     .addOnSuccessListener {
                                         fullName = fullName.trim()
                                         phoneNumber = phoneNumber.trim()
+                                        county = county.trim()
+                                        subCounty = subCounty.trim()
                                         isSaving = false
                                         isEditing = false
+
+                                        scope.launch {
+                                            farmerPoint = LocationResolver.farmerPoint(db, context, userId)
+                                        }
 
                                         Toast.makeText(
                                             context,
@@ -455,7 +493,7 @@ fun ProfilePage(
 
                                         Toast.makeText(
                                             context,
-                                            "Could not save changes.Try again",
+                                            "Could not save changes. Try again",
                                             Toast.LENGTH_LONG
                                         ).show()
                                     }
