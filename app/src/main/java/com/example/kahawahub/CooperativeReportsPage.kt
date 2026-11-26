@@ -74,15 +74,18 @@ fun CooperativeReportsPage(
                     val docs = snapshot.documents
                     totalGivenSupplyKg = docs.sumOf { it.getLong("quantity_kg") ?: 0L }
                     totalAcceptedSupplyKg = docs
-                        .filter { (it.getString("status") ?: "").equals("Verified", ignoreCase = true) }
+                        .filter { 
+                            val st = (it.getString("status") ?: "").lowercase()
+                            st == "verified" || st.contains("milled") || st == "processing" || st == "completed"
+                        }
                         .sumOf { it.getLong("verified_quantity_kg") ?: it.getLong("quantity_kg") ?: 0L }
                     totalRejectedSupplyKg = docs
-                        .filter { (it.getString("status") ?: "").equals("Rejected", ignoreCase = true) }
+                        .filter { (it.getString("status") ?: "").lowercase() == "rejected" }
                         .sumOf { it.getLong("quantity_kg") ?: 0L }
                     totalPendingSupplyKg = docs
                         .filter { 
-                            val st = it.getString("status") ?: ""
-                            st.equals("Pending", ignoreCase = true) || st.equals("Under Review", ignoreCase = true)
+                            val st = (it.getString("status") ?: "").lowercase()
+                            st == "pending" || st == "under review" || st.contains("accepted")
                         }
                         .sumOf { it.getLong("quantity_kg") ?: 0L }
 

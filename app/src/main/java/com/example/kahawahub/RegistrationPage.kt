@@ -401,11 +401,12 @@ fun RegistrationPage(
                             }
                         }
                         .addOnFailureListener { exception ->
-                            Toast.makeText(
-                                context,
-                                "Registration failed: ${exception.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            val userMsg = if (exception is com.google.firebase.FirebaseNetworkException || exception.message?.contains("network", ignoreCase = true) == true) {
+                                "Network error: Please check your internet connection and try again."
+                            } else {
+                                "Registration failed: ${exception.localizedMessage}"
+                            }
+                            Toast.makeText(context, userMsg, Toast.LENGTH_LONG).show()
                         }
                 }
             },

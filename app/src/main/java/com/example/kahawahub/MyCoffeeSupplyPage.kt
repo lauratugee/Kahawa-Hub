@@ -59,9 +59,24 @@ fun MyCoffeeSupplyPage(
     var submissions by remember { mutableStateOf<List<CoffeeSupplyItem>>(emptyList()) }
     var isSubmissionsLoading by remember { mutableStateOf(true) }
 
+    var currentFarmerName by remember { mutableStateOf("") }
+    var currentCounty by remember { mutableStateOf("") }
+    var currentSubCounty by remember { mutableStateOf("") }
+
     val db = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
     val userId = auth.currentUser?.uid
+
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            db.collection("users").document(userId).get()
+                .addOnSuccessListener { doc ->
+                    currentFarmerName = doc.getString("name") ?: ""
+                    currentCounty = doc.getString("county") ?: ""
+                    currentSubCounty = doc.getString("sub_county") ?: ""
+                }
+        }
+    }
 
     // Listen to current farmer's past supply submissions in real-time
     DisposableEffect(userId) {
@@ -222,7 +237,9 @@ fun MyCoffeeSupplyPage(
 
                         val submissionData = hashMapOf(
                             "farmer_id" to userId,
-                            "farmer_name" to (auth.currentUser?.displayName ?: "Farmer"),
+                            "farmer_name" to currentFarmerName.ifBlank { auth.currentUser?.displayName ?: "Farmer" },
+                            "county" to currentCounty,
+                            "sub_county" to currentSubCounty,
                             "coffee_type" to selectedCoffeeType,
                             "quantity_kg" to kg,
                             "status" to "Pending",

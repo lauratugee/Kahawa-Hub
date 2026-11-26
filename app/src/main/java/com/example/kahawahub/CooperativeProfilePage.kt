@@ -73,7 +73,10 @@ fun CooperativeProfilePage(
                 .addSnapshotListener { snapshot, _ ->
                     if (snapshot != null) {
                         totalVerifiedSupplyKg = snapshot.documents
-                            .filter { (it.getString("status") ?: "").equals("Verified", ignoreCase = true) }
+                            .filter { 
+                                val st = (it.getString("status") ?: "").lowercase()
+                                st == "verified" || st.contains("milled") || st == "processing" || st == "completed"
+                            }
                             .sumOf { it.getLong("verified_quantity_kg") ?: it.getLong("quantity_kg") ?: 0L }
                     }
                 }

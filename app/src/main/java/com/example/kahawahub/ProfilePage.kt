@@ -121,7 +121,7 @@ fun ProfilePage(
                 }
             }
 
-        // Calculate farmer's supply and sales metrics
+        // Calculate farmer's supply and sales metrics in real-time
         db.collection("coffee_supply_submissions")
             .whereEqualTo("farmer_id", userId)
             .addSnapshotListener { snapshot, _ ->
@@ -130,14 +130,14 @@ fun ProfilePage(
                     totalDeclaredSupplyKg = docs.sumOf { it.getLong("quantity_kg") ?: 0L }
                     verifiedOrSoldSupplyKg = docs
                         .filter { 
-                            val st = it.getString("status") ?: ""
-                            st.equals("Verified", ignoreCase = true) || st.equals("Completed", ignoreCase = true)
+                            val st = (it.getString("status") ?: "").lowercase()
+                            st == "verified" || st.contains("milled") || st == "processing" || st == "completed"
                         }
                         .sumOf { it.getLong("verified_quantity_kg") ?: it.getLong("quantity_kg") ?: 0L }
                     pendingSupplyKg = docs
                         .filter { 
-                            val st = it.getString("status") ?: ""
-                            st.equals("Pending", ignoreCase = true) || st.equals("Under Review", ignoreCase = true)
+                            val st = (it.getString("status") ?: "").lowercase()
+                            st == "pending" || st == "under review" || st.contains("accepted")
                         }
                         .sumOf { it.getLong("quantity_kg") ?: 0L }
                 }

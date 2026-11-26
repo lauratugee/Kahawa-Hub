@@ -504,12 +504,13 @@ fun AdminDashboard(
 
                                                 db.collection("coffee_supply_submissions")
                                                     .whereEqualTo("farmer_id", farmerId)
-                                                    .get()
-                                                    .addOnSuccessListener { subSnapshot ->
-                                                        val subs = subSnapshot.documents.map { it.data ?: emptyMap() }
-                                                        farmerSubmissionsList = subs
-                                                        farmerTotalEarnings = subs.sumOf { (it["final_payout_amount"] as? Double) ?: 0.0 }
-                                                        isFarmerDetailsLoading = false
+                                                    .addSnapshotListener { subSnapshot, _ ->
+                                                        if (subSnapshot != null) {
+                                                            val subs = subSnapshot.documents.map { it.data ?: emptyMap() }
+                                                            farmerSubmissionsList = subs
+                                                            farmerTotalEarnings = subs.sumOf { (it["final_payout_amount"] as? Double) ?: 0.0 }
+                                                            isFarmerDetailsLoading = false
+                                                        }
                                                     }
                                             },
                                         colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F3E9))

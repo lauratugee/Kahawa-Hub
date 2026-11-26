@@ -960,11 +960,27 @@ fun CooperativeDashboard(
                                 items(filteredSubmissions) { item ->
                                     val farmerId = item["farmer_id"] as? String ?: ""
                                     val memberMatch = members.find { it["user_id"] == farmerId || it["farmer_id"] == farmerId }
-                                    val phone = memberMatch?.get("phone_number") as? String ?: "N/A"
-                                    val county = item["county"] as? String ?: ""
-                                    val subCounty = item["sub_county"] as? String ?: ""
+                                    
+                                    val rawName = item["farmer_name"] as? String ?: ""
+                                    val farmerName = if (rawName.isNotBlank() && !rawName.equals("Farmer", ignoreCase = true) && !rawName.equals("Unknown Farmer", ignoreCase = true)) {
+                                        rawName
+                                    } else {
+                                        (memberMatch?.get("name") as? String)?.takeIf { it.isNotBlank() } ?: "Farmer"
+                                    }
+
+                                    val rawPhone = memberMatch?.get("phone_number") as? String ?: ""
+                                    val phone = if (rawPhone.isNotBlank() && rawPhone != "Number not provided") rawPhone else "N/A"
+
+                                    val itemCounty = item["county"] as? String ?: ""
+                                    val itemSubCounty = item["sub_county"] as? String ?: ""
+                                    val memberCounty = memberMatch?.get("county") as? String ?: ""
+                                    val memberSubCounty = memberMatch?.get("sub_county") as? String ?: ""
+
+                                    val county = itemCounty.ifBlank { memberCounty }
+                                    val subCounty = itemSubCounty.ifBlank { memberSubCounty }
+
                                     val locationStr = if (subCounty.isNotBlank() || county.isNotBlank()) {
-                                        "(${subCounty.ifBlank { "N/A" }}, ${county.ifBlank { "N/A" }})"
+                                        listOf(subCounty, county).filter { it.isNotBlank() }.joinToString(", ")
                                     } else {
                                         "N/A"
                                     }
@@ -998,7 +1014,7 @@ fun CooperativeDashboard(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = item["farmer_name"] as? String ?: "Unknown Farmer",
+                                                    text = farmerName,
                                                     fontSize = 16.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     color = CoffeeBrown
@@ -1106,24 +1122,6 @@ fun CooperativeDashboard(
                                             shape = RoundedCornerShape(10.dp)
                                         )
 
-                                                        Spacer(modifier = Modifier.height(12.dp))
-
-                                        Text(
-                                            text = "Factory / Buyer Quality Grade",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = CoffeeBrown
-                                        )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        OutlinedTextField(
-                                            value = qualityGradeInput,
-                                            onValueChange = { qualityGradeInput = it },
-                                            label = { Text("Quality Grade (e.g. AA, AB, PB)") },
-                                            singleLine = true,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(10.dp)
-                                        )
-
                                         Spacer(modifier = Modifier.height(12.dp))
 
                                         Text(
@@ -1200,12 +1198,10 @@ fun CooperativeDashboard(
                                                 val verifiedQty =
                                                     verifiedQuantityInput.toLongOrNull()
                                                         ?: declaredQuantity
-                                                val gradeInput = qualityGradeInput.ifBlank { "AA" }
                                                 val updateData = mutableMapOf<String, Any>(
                                                     "status" to "Verified",
                                                     "verified_quantity_kg" to verifiedQty,
                                                     "quality_status" to "Passed",
-                                                    "grade" to gradeInput,
                                                     "reviewed_by" to userName,
                                                     "reviewed_at" to System.currentTimeMillis()
                                                 )
@@ -1221,7 +1217,7 @@ fun CooperativeDashboard(
                                                                     "farmer_id" to farmerId,
                                                                     "cooperative_id" to cooperativeId,
                                                                     "title" to "Coffee Supply Gate Verified!",
-                                                                    "message" to "Your coffee delivery has been physically received and verified at the cooperative gate (Grade: $gradeInput).",
+                                                                    "message" to "Your coffee delivery has been physically received and verified at the cooperative gate ($verifiedQty kg verified).",
                                                                     "date_posted" to System.currentTimeMillis()
                                                                 )
                                                             )

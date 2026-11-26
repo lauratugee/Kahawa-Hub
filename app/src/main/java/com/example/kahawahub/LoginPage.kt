@@ -261,11 +261,12 @@ fun LoginPage(
                         }
                         .addOnFailureListener { exception ->
                             isLoading = false
-                            Toast.makeText(
-                                context,
-                                "Login failed: (${exception.javaClass.simpleName}): ${exception.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            val userMsg = if (exception is com.google.firebase.FirebaseNetworkException || exception.message?.contains("network", ignoreCase = true) == true) {
+                                "Network error: Please check your internet connection and try again."
+                            } else {
+                                "Login failed: ${exception.localizedMessage}"
+                            }
+                            Toast.makeText(context, userMsg, Toast.LENGTH_LONG).show()
                         }
                 }
             },
