@@ -264,6 +264,19 @@ fun FindCooperativePage(
                                                 )
                                                 .addOnSuccessListener {
                                                     farmerCooperativeId = cooperative.cooperativeId
+
+                                                    FirebaseFirestore.getInstance()
+                                                        .collection("cooperative_history")
+                                                        .add(
+                                                            hashMapOf(
+                                                                "farmer_id" to currentUserId,
+                                                                "cooperative_id" to cooperative.cooperativeId,
+                                                                "cooperative_name" to cooperative.name,
+                                                                "action" to "joined",
+                                                                "timestamp" to System.currentTimeMillis()
+                                                            )
+                                                        )
+
                                                     Toast.makeText(
                                                         context,
                                                         "You have successfully joined ${cooperative.name}",

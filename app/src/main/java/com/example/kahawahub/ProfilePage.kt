@@ -161,6 +161,20 @@ fun ProfilePage(
                         val userId = currentUser?.uid
 
                         if (userId != null) {
+                            val currentCoopId = memberCooperativeId
+                            if (currentCoopId.isNotBlank()) {
+                                db.collection("cooperative_history").add(
+                                    hashMapOf(
+                                        "farmer_id" to userId,
+                                        "farmer_name" to fullName,
+                                        "cooperative_id" to currentCoopId,
+                                        "cooperative_name" to cooperativeName,
+                                        "action" to "left",
+                                        "timestamp" to System.currentTimeMillis()
+                                    )
+                                )
+                            }
+
                             db.collection("farmers")
                                 .document(userId)
                                 .update(
@@ -170,6 +184,7 @@ fun ProfilePage(
                                 .addOnSuccessListener {
                                     cooperativeName = ""
                                     cooperativeLocation = ""
+                                    memberCooperativeId = ""
                                     showLeaveConfirmation = false
 
                                     Toast.makeText(
